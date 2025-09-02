@@ -1,4 +1,5 @@
 import asyncio
+import socket
 import psutil
 import os
 import platform
@@ -30,6 +31,50 @@ def get_macos_version():
         return platform.platform()
 
 # --- API Endpoints ---
+def get_local_ip():
+    # Try various methods to get the local IP address
+    try:
+        # Method 1: Get hostname and resolve it
+        hostname = socket.gethostname()
+        ip_address = socket.gethostbyname(hostname)
+        if ip_address and not ip_address.startswith("127."):
+            return ip_address
+    except socket.gaierror:
+        pass
+
+    try:
+        # Method 2: Connect to an external server
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.1)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        pass
+
+    try:
+        # Method 3: Parse ifconfig output (for macOS/Linux)
+        output = subprocess.check_output("ifconfig | grep 'inet ' | grep -v '127.0.0.1' | awk '{print $2}' | head -n 1", shell=True, text=True, stderr=subprocess.DEVNULL)
+        if output.strip():
+            return output.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+        
+    return "N/A"
+
+def get_gpu_cores():
+    try:
+        profiler_output = subprocess.check_output(["system_profiler", "SPDisplaysDataType"], text=True, stderr=subprocess.DEVNULL)
+        
+        # For Apple Silicon, return core count as integer
+        cores_match = re.search(r"Total Number of Cores: (\d+)", profiler_output)
+        if cores_match:
+            return int(cores_match.group(1))
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    return None
 
 @app.get("/api/system/static")
 async def get_system_static():
@@ -45,8 +90,10 @@ async def get_system_static():
         "cpu_info": cpuinfo.get_cpu_info()['brand_raw'],
         "cpu_cores": psutil.cpu_count(logical=False),
         "cpu_logical_cores": psutil.cpu_count(logical=True),
+        "gpu_cores": get_gpu_cores(),
         "total_memory": mem_total,
         "total_disk": disk_total,
+        "local_ip": get_local_ip(),
         "boot_time": boot_dt.isoformat(),
         "uptime_seconds": uptime_seconds
     }

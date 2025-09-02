@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 // --- Type Definitions ---
 interface StaticInfo { 
@@ -7,8 +7,10 @@ interface StaticInfo {
   cpu_info: string; 
   cpu_cores: number; 
   cpu_logical_cores: number; 
+  gpu_cores: number | null;
   total_memory: number; 
   total_disk: number; 
+  local_ip: string;
   boot_time: string; 
 }
 
@@ -402,12 +404,32 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
       </div>
       <div className="system-details">
         <div className="detail-item">
-          <span className="detail-label">系统</span>
-          <span className="detail-value">{info.os_version}</span>
+          <span className="detail-label">IP地址</span>
+          <span className="detail-value">{info.local_ip}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">内存</span>
+          <span className="detail-value">{formatBytes(info.total_memory)}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">磁盘</span>
+          <span className="detail-value">{formatBytes(info.total_disk)}</span>
+        </div>
+        {info.gpu_cores && <div className="detail-item">
+          <span className="detail-label">GPU</span>
+          <span className="detail-value">{info.gpu_cores} Cores</span>
+        </div>}
+        <div className="detail-item">
+          <span className="detail-label">CPU</span>
+          <span className="detail-value">{info.cpu_cores} Cores</span>
         </div>
         <div className="detail-item">
           <span className="detail-label">处理器</span>
           <span className="detail-value">{info.cpu_info}</span>
+        </div>
+        <div className="detail-item">
+          <span className="detail-label">系统</span>
+          <span className="detail-value">{info.os_version}</span>
         </div>
         <div className="detail-item">
           <span className="detail-label">运行时间</span>
