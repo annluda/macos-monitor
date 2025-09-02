@@ -32,15 +32,6 @@ def get_macos_version():
 
 # --- API Endpoints ---
 def get_local_ip():
-    # Try various methods to get the local IP address
-    try:
-        # Method 1: Get hostname and resolve it
-        hostname = socket.gethostname()
-        ip_address = socket.gethostbyname(hostname)
-        if ip_address and not ip_address.startswith("127."):
-            return ip_address
-    except socket.gaierror:
-        pass
 
     try:
         # Method 2: Connect to an external server
