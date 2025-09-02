@@ -158,6 +158,104 @@ const HoloCard: React.FC<{ children: React.ReactNode; className?: string }> = ({
   );
 };
 
+// --- Water Ball Animation Component ---
+const WaterBall: React.FC<{ percent: number; label: string }> = ({ percent, label }) => {
+  const [animationKey, setAnimationKey] = useState(0);
+  
+  useEffect(() => {
+    setAnimationKey(prev => prev + 1);
+  }, [percent]);
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full">
+      <div className="relative">
+        <svg width="140" height="140" className="water-ball">
+          <defs>
+            <clipPath id={`water-clip-${animationKey}`}>
+              <circle cx="70" cy="70" r="60" />
+            </clipPath>
+            <linearGradient id="waterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.8"/>
+              <stop offset="50%" stopColor="#0891b2" stopOpacity="0.9"/>
+              <stop offset="100%" stopColor="#0e7490" stopOpacity="1"/>
+            </linearGradient>
+            <filter id="waterGlow">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge> 
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          
+          {/* Outer ring */}
+          <circle
+            cx="70"
+            cy="70"
+            r="60"
+            stroke="rgba(6, 182, 212, 0.3)"
+            strokeWidth="2"
+            fill="none"
+            className="pulse-ring"
+          />
+          
+          {/* Water container */}
+          <g clipPath={`url(#water-clip-${animationKey})`}>
+            {/* Water waves */}
+            <path
+              className="water-wave wave-1"
+              d={`M 10 ${140 - (percent / 100) * 120} Q 45 ${140 - (percent / 100) * 120 - 8} 80 ${140 - (percent / 100) * 120} T 150 ${140 - (percent / 100) * 120} L 150 150 L 10 150 Z`}
+              fill="url(#waterGradient)"
+              filter="url(#waterGlow)"
+              style={{ animationDelay: '0s' }}
+            />
+            <path
+              className="water-wave wave-2"
+              d={`M 10 ${140 - (percent / 100) * 120 + 4} Q 45 ${140 - (percent / 100) * 120 - 4} 80 ${140 - (percent / 100) * 120 + 4} T 150 ${140 - (percent / 100) * 120 + 4} L 150 150 L 10 150 Z`}
+              fill="rgba(6, 182, 212, 0.6)"
+              style={{ animationDelay: '0.5s' }}
+            />
+            <path
+              className="water-wave wave-3"
+              d={`M 10 ${140 - (percent / 100) * 120 + 8} Q 45 ${140 - (percent / 100) * 120 + 12} 80 ${140 - (percent / 100) * 120 + 8} T 150 ${140 - (percent / 100) * 120 + 8} L 150 150 L 10 150 Z`}
+              fill="rgba(6, 182, 212, 0.4)"
+              style={{ animationDelay: '1s' }}
+            />
+          </g>
+          
+          {/* Glass effect */}
+          <circle
+            cx="70"
+            cy="70"
+            r="60"
+            stroke="rgba(255, 255, 255, 0.2)"
+            strokeWidth="1"
+            fill="none"
+          />
+          
+          {/* Highlight */}
+          <ellipse
+            cx="55"
+            cy="45"
+            rx="15"
+            ry="8"
+            fill="rgba(255, 255, 255, 0.3)"
+            className="glass-highlight"
+          />
+        </svg>
+        
+        {/* Percentage text */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-2xl font-bold text-cyan-400 glow-text">
+            {percent.toFixed(1)}%
+          </span>
+          <span className="text-xs text-gray-400 mt-1">{label}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- Animated Process List ---
 const ProcessList: React.FC<{ processes: Process[] }> = ({ processes }) => {
   return (
@@ -634,16 +732,58 @@ function App() {
           min-height: 200px;
         }
 
-        .disk-chart {
-          position: relative;
-          width: 120px;
-          height: 120px;
-          margin: 0 auto;
+        .water-ball {
+        filter: drop-shadow(0 0 20px rgba(6, 182, 212, 0.3));
         }
 
-        .disk-progress {
-          transform: rotate(-90deg);
-          filter: drop-shadow(0 0 8px #10b98140);
+        .water-wave {
+        animation: wave-motion 3s ease-in-out infinite;
+        transform-origin: center;
+        }
+
+        .wave-1 {
+        animation-duration: 3s;
+        }
+
+        .wave-2 {
+        animation-duration: 2.5s;
+        animation-direction: reverse;
+        }
+
+        .wave-3 {
+        animation-duration: 3.5s;
+        }
+
+        @keyframes wave-motion {
+        0%, 100% { 
+            transform: translateX(0) scaleY(1);
+        }
+        25% { 
+            transform: translateX(-5px) scaleY(0.95);
+        }
+        50% { 
+            transform: translateX(0) scaleY(1.05);
+        }
+        75% { 
+            transform: translateX(5px) scaleY(0.98);
+        }
+        }
+
+        .glass-highlight {
+        animation: highlight-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes highlight-pulse {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 0.6; }
+        }
+
+        .mt-4 {
+        margin-top: 1rem;
+        }
+
+        .text-center {
+        text-align: center;
         }
 
         .glow-text {
@@ -896,44 +1036,18 @@ function App() {
           </HoloCard>
 
           {/* Disk Usage */}
-          <HoloCard>
-            <div className="flex flex-col items-center justify-center h-full">
-              <div className="disk-chart">
-                <svg width="120" height="120" className="transform -rotate-90">
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="45"
-                    stroke="rgba(255,255,255,0.1)"
-                    strokeWidth="12"
-                    fill="none"
-                  />
-                  <circle
-                    cx="60"
-                    cy="60"
-                    r="45"
-                    stroke="#10b981"
-                    strokeWidth="12"
-                    fill="none"
-                    strokeDasharray={`${2 * Math.PI * 45}`}
-                    strokeDashoffset={`${2 * Math.PI * 45 * (1 - (dynamicMetrics?.disk_percent ?? 0) / 100)}`}
-                    strokeLinecap="round"
-                    className="disk-progress"
-                    style={{ transition: 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1)' }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-emerald-400 glow-text">
-                    {(dynamicMetrics?.disk_percent ?? 0).toFixed(1)}%
-                  </span>
-                  <span className="text-xs text-gray-400 mt-1">磁盘使用</span>
-                  <span className="text-xs text-gray-500 mt-1">
-                    {formatBytes(dynamicMetrics?.disk_used ?? 0)}
-                  </span>
-                </div>
-              </div>
+          {/* Disk Usage with Water Ball */}
+            <HoloCard>
+            <WaterBall 
+                percent={dynamicMetrics?.disk_percent ?? 0}
+                label="磁盘使用"
+            />
+            <div className="mt-4 text-center">
+                <span className="text-xs text-gray-500">
+                {formatBytes(dynamicMetrics?.disk_used ?? 0)}
+                </span>
             </div>
-          </HoloCard>
+            </HoloCard>
 
           {/* Network Activity */}
           <HoloCard className="network-card">
