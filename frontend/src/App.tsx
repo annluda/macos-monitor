@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { XAxis, YAxis, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 // --- Type Definitions ---
 interface StaticInfo { 
@@ -396,31 +396,27 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
             </div>
         </div>
         <div className="detail-item">
-            <div className="detail-icon">💾</div>
             <div className="detail-text">
             <span className="detail-label">内存</span>
             <span className="detail-value">{formatBytes(info.total_memory)}</span>
             </div>
         </div>
         <div className="detail-item">
-            <div className="detail-icon">💽</div>
             <div className="detail-text">
             <span className="detail-label">存储</span>
-            <span className="detail-value">{formatBytes(info.total_disk)}</span>
+            <span className="detail-value">{formatBytes(info.total_disk, 0)}</span>
             </div>
         </div>
         {info.gpu_cores && <div className="detail-item">
-            <div className="detail-icon">🎮</div>
             <div className="detail-text">
             <span className="detail-label">GPU</span>
-            <span className="detail-value">{info.gpu_cores} 核心</span>
+            <span className="detail-value">{info.gpu_cores} 核</span>
             </div>
         </div>}
         <div className="detail-item">
-            <div className="detail-icon">⚡</div>
             <div className="detail-text">
             <span className="detail-label">CPU</span>
-            <span className="detail-value">{info.cpu_cores} 核心</span>
+            <span className="detail-value">{info.cpu_cores} 核</span>
             </div>
         </div>
         <div className="detail-item">
@@ -749,7 +745,6 @@ function App() {
         }
 
         .detail-value {
-          width: 70px;
           font-size: 0.85rem;
           font-weight: 600;
           color: #f3f4f6;
