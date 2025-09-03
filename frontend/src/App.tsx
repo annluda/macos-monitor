@@ -32,7 +32,7 @@ interface DynamicMetrics {
 }
 
 // --- Helper Functions ---
-const formatBytes = (bytes: number, decimals = 1) => {
+const formatBytes = (bytes: number, decimals = 2) => {
   if (!bytes || bytes === 0) return '0 B';
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
@@ -324,7 +324,6 @@ const NetworkChart: React.FC<{ data: any[] }> = ({ data }) => {
       <div className="relative w-full" style={{ height: 'calc(100% - 4rem)' }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-            {/* ... 其余内容保持不变，但在两个 Area 组件中添加 dot={false} activeDot={false} ... */}
             <Area
               type="monotone"
               dataKey="download"
@@ -425,7 +424,7 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
             </div>
         </div>
         <div className="detail-item">
-            <div className="detail-icon">⏱️</div>
+            <div className="detail-icon">ⱏ️</div>
             <div className="detail-text">
             <span className="detail-label">运行时间</span>
             <span className="detail-value">{uptime}</span>
@@ -433,7 +432,10 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
         </div>
         <div className="system-badge">
             <div className="badge-glow"></div>
-            <span className="badge-text">{info.os_version}</span>
+            <div className="badge-content">
+              <span className="badge-text">{info.os_version}</span>
+              <span className="badge-subtext">{info.cpu_info}</span>
+            </div>
         </div>
         </div>
     </div>
@@ -637,7 +639,7 @@ function App() {
           z-index: 100;
           display: flex;
           justify-content: space-between;
-          align-items: center;
+          align-items: flex-start;
           background: rgba(15, 15, 35, 0.8);
           backdrop-filter: blur(30px) saturate(150%);
           border-radius: 24px;
@@ -648,8 +650,8 @@ function App() {
             0 0 0 1px rgba(255, 255, 255, 0.05),
             inset 0 1px 0 rgba(255, 255, 255, 0.1);
           animation: slide-down 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-          overflow: hidden;           /* 新增 */
-          min-height: 60px;          /* 新增 */
+          overflow: visible;
+          min-height: 60px;
         }
 
         @keyframes slide-down {
@@ -668,9 +670,9 @@ function App() {
           flex-direction: column;
           align-items: flex-start;
           gap: 0.5rem;
-          flex-shrink: 0;            /* 新增 */
-          white-space: nowrap;       /* 新增 */
-          min-width: fit-content;    /* 新增 */
+          flex-shrink: 0;
+          white-space: nowrap;
+          min-width: fit-content;
         }
 
         .system-clock {
@@ -699,16 +701,13 @@ function App() {
             display: flex;
             gap: 1rem;
             align-items: center;
-            flex-wrap: nowrap;          /* 新增 */
-            overflow-x: auto;           /* 新增 */
-            overflow-y: hidden;         /* 新增 */
-            flex-shrink: 0;            /* 新增 */
-            max-width: calc(100vw - 20rem); /* 新增 */
-            scrollbar-width: none;      /* 新增 */
-            -ms-overflow-style: none;   /* 新增 */
+            flex-wrap: wrap;
+            flex-shrink: 0;
+            max-width: calc(100vw - 20rem);
+            overflow: visible;
         }
 
-        .system-details::-webkit-scrollbar { /* 新增整个规则 */
+        .system-details::-webkit-scrollbar {
           display: none;
         }
 
@@ -721,6 +720,8 @@ function App() {
           border-radius: 10px;
           border: 1px solid rgba(255, 255, 255, 0.05);
           transition: all 0.3s ease;
+          white-space: nowrap;
+          flex-shrink: 0;
         }
 
         .detail-item:hover {
@@ -761,8 +762,23 @@ function App() {
           border-radius: 16px;
           padding: 0.75rem 1.5rem;
           overflow: hidden;
-          flex-shrink: 0;            /* 新增 */
-          white-space: nowrap;       /* 新增 */
+          flex-shrink: 0;
+          white-space: nowrap;
+        }
+
+        .badge-content {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        .badge-subtext {
+          font-size: 0.7rem;
+          color: #9ca3af;
+          font-weight: 400;
+          opacity: 0.8;
         }
 
         .badge-glow {
@@ -821,10 +837,10 @@ function App() {
           gap: 0.5rem;
           padding: 0.5rem 0.75rem;
           background: rgba(255, 255, 255, 0.05);
-          border-radius: 8px;
+          border-radius: 12px;
           border: 1px solid rgba(255, 255, 255, 0.1);
-          flex-shrink: 0;            /* 新增 */
-          min-width: 80px;          /* 新增 */
+          flex-shrink: 0;
+          min-width: 110px;
         }
 
         .stat-indicator {
@@ -856,24 +872,19 @@ function App() {
         }
 
         .stat-value {
-          font-size: 0.6rem;
+          font-size: 0.8rem;
           font-weight: 600;
           color: #f3f4f6;
         }
 
         .stat-value-fixed {
-            width: 70px;               
+            width: 90px;
             text-align: right;
             display: inline-block;
-            white-space: nowrap;       /* 新增 */
-            overflow: hidden;          /* 新增 */
-            text-overflow: ellipsis;   /* 新增 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-
-
-
-
-
 
         .pulse-ring {
           animation: pulse-ring 2s infinite;
@@ -1073,7 +1084,7 @@ function App() {
         }
 
         .pt-32 {
-          padding-top: 8rem;
+          padding-top: 10rem;
         }
 
         .pb-8 {
@@ -1191,9 +1202,12 @@ function App() {
             flex-direction: column;
             gap: 1rem;
             text-align: center;
+            align-items: center;
+            padding: 1.5rem;
           }
           .system-details {
             justify-content: center;
+            max-width: 100%;
           }
           .metrics-grid {
             grid-template-columns: 1fr;
@@ -1201,6 +1215,9 @@ function App() {
           }
           .network-card, .processes-card {
             grid-column: span 1;
+          }
+          .pt-32 {
+            padding-top: 12rem;
           }
         }
       `}</style>
@@ -1245,8 +1262,7 @@ function App() {
           </HoloCard>
 
           {/* Disk Usage */}
-          {/* Disk Usage with Water Ball */}
-            <HoloCard>
+          <HoloCard>
             <WaterBall 
                 percent={dynamicMetrics?.disk_percent ?? 0}
                 label="磁盘使用"
