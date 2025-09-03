@@ -32,7 +32,7 @@ interface DynamicMetrics {
 }
 
 // --- Helper Functions ---
-const formatBytes = (bytes: number, decimals = 2) => {
+const formatBytes = (bytes: number, decimals = 1) => {
   if (!bytes || bytes === 0) return '0 B';
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
@@ -837,10 +837,10 @@ function App() {
           gap: 0.5rem;
           padding: 0.5rem 0.75rem;
           background: rgba(255, 255, 255, 0.05);
-          border-radius: 12px;
+          border-radius: 8px;
           border: 1px solid rgba(255, 255, 255, 0.1);
           flex-shrink: 0;
-          min-width: 110px;
+          min-width: 100px;
         }
 
         .stat-indicator {
@@ -872,13 +872,13 @@ function App() {
         }
 
         .stat-value {
-          font-size: 0.8rem;
+          font-size: 0.6rem;
           font-weight: 600;
           color: #f3f4f6;
         }
 
         .stat-value-fixed {
-            width: 90px;
+            width: 80px;
             text-align: right;
             display: inline-block;
             white-space: nowrap;
