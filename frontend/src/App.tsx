@@ -391,7 +391,7 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
         <div className="detail-item">
             <div className="detail-icon">🌐</div>
             <div className="detail-text">
-            <span className="detail-label">网络</span>
+            <span className="detail-label">本机IP</span>
             <span className="detail-value">{info.local_ip}</span>
             </div>
         </div>
@@ -424,7 +424,7 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
             </div>
         </div>
         <div className="detail-item">
-            <div className="detail-icon">ⱏ️</div>
+            <div className="detail-icon">🟢</div>
             <div className="detail-text">
             <span className="detail-label">运行时间</span>
             <span className="detail-value">{uptime}</span>
@@ -437,7 +437,7 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
               <span className="badge-subtext">{info.cpu_info}</span>
             </div>
         </div>
-        </div>
+      </div>
     </div>
   );
 };
@@ -676,8 +676,8 @@ function App() {
         }
 
         .system-clock {
-          font-size: 2.5rem;
-          font-weight: 300;
+          font-size: 2rem;
+          font-weight: 600;
           background: linear-gradient(135deg, #06b6d4, #3b82f6, #8b5cf6);
           -webkit-background-clip: text;
           background-clip: text;
@@ -759,7 +759,7 @@ function App() {
           position: relative;
           background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
           border: 1px solid rgba(59, 130, 246, 0.3);
-          border-radius: 16px;
+          border-radius: 12px;
           padding: 0.75rem 1.5rem;
           overflow: hidden;
           flex-shrink: 0;
@@ -879,7 +879,7 @@ function App() {
 
         .stat-value-fixed {
             width: 80px;
-            text-align: right;
+            text-align: left;
             display: inline-block;
             white-space: nowrap;
             overflow: hidden;
