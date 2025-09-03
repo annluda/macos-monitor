@@ -32,11 +32,11 @@ interface DynamicMetrics {
 }
 
 // --- Helper Functions ---
-const formatBytes = (bytes: number, decimals = 2) => {
-  if (!bytes || bytes === 0) return '0 Bytes';
+const formatBytes = (bytes: number, decimals = 1) => {
+  if (!bytes || bytes === 0) return '0 B';
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 };
@@ -301,36 +301,30 @@ const NetworkChart: React.FC<{ data: any[] }> = ({ data }) => {
     1
   );
 
+  const currentDownload = data[data.length - 1]?.download || 0;
+  const currentUpload = data[data.length - 1]?.upload || 0;
+
   return (
     <div className="w-full h-full">
-      <h3 className="text-lg font-semibold mb-4 text-transparent bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text">
-        网络活动
-      </h3>
-      <div className="relative w-full" style={{ height: 'calc(100% - 3rem)' }}>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-transparent bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text">
+          网络活动
+        </h3>
+        <div className="network-stats">
+          <div className="network-stat-item">
+            <div className="stat-indicator download-indicator"></div>
+            <span className="stat-value stat-value-fixed">↓ {formatBytes(currentDownload)}/s</span>
+          </div>
+          <div className="network-stat-item">
+            <div className="stat-indicator upload-indicator"></div>
+            <span className="stat-value stat-value-fixed">↑ {formatBytes(currentUpload)}/s</span>
+          </div>
+        </div>
+      </div>
+      <div className="relative w-full" style={{ height: 'calc(100% - 4rem)' }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-            <defs>
-              <linearGradient id="downloadGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0.1}/>
-              </linearGradient>
-              <linearGradient id="uploadGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
-              </linearGradient>
-            </defs>
-            <XAxis 
-              dataKey="time" 
-              axisLine={false}
-              tickLine={false}
-              tick={false}
-            />
-            <YAxis 
-              axisLine={false}
-              tickLine={false}
-              tick={false}
-              domain={[0, maxValue]}
-            />
+            {/* ... 其余内容保持不变，但在两个 Area 组件中添加 dot={false} activeDot={false} ... */}
             <Area
               type="monotone"
               dataKey="download"
@@ -339,6 +333,8 @@ const NetworkChart: React.FC<{ data: any[] }> = ({ data }) => {
               fillOpacity={1}
               fill="url(#downloadGradient)"
               strokeDasharray="0"
+              dot={false}
+              activeDot={false}
               style={{
                 filter: 'drop-shadow(0 0 8px #0ea5e940)',
               }}
@@ -351,24 +347,14 @@ const NetworkChart: React.FC<{ data: any[] }> = ({ data }) => {
               fillOpacity={1}
               fill="url(#uploadGradient)"
               strokeDasharray="0"
+              dot={false}
+              activeDot={false}
               style={{
                 filter: 'drop-shadow(0 0 8px #10b98140)',
               }}
             />
           </AreaChart>
         </ResponsiveContainer>
-        
-        {/* Legend */}
-        <div className="absolute top-2 right-2 text-xs text-gray-400 space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-1 bg-blue-400 rounded shadow-lg shadow-blue-400/50"></div>
-            <span>下载 {formatBytes(data[data.length - 1]?.download || 0)}/s</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-1 bg-green-400 rounded shadow-lg shadow-green-400/50"></div>
-            <span>上传 {formatBytes(data[data.length - 1]?.upload || 0)}/s</span>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -395,47 +381,61 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
   return (
     <div className="system-header">
       <div className="system-time">
-        <div className="text-3xl font-light">
+        <div className="system-clock">
           {currentTime.toLocaleTimeString('zh-CN', { hour12: false })}
         </div>
-        <div className="text-sm text-gray-400">
+        <div className="system-date">
           {currentTime.toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
       </div>
       <div className="system-details">
         <div className="detail-item">
-          <span className="detail-label">IP地址</span>
-          <span className="detail-value">{info.local_ip}</span>
+            <div className="detail-icon">🌐</div>
+            <div className="detail-text">
+            <span className="detail-label">网络</span>
+            <span className="detail-value">{info.local_ip}</span>
+            </div>
         </div>
         <div className="detail-item">
-          <span className="detail-label">内存</span>
-          <span className="detail-value">{formatBytes(info.total_memory)}</span>
+            <div className="detail-icon">💾</div>
+            <div className="detail-text">
+            <span className="detail-label">内存</span>
+            <span className="detail-value">{formatBytes(info.total_memory)}</span>
+            </div>
         </div>
         <div className="detail-item">
-          <span className="detail-label">磁盘</span>
-          <span className="detail-value">{formatBytes(info.total_disk)}</span>
+            <div className="detail-icon">💽</div>
+            <div className="detail-text">
+            <span className="detail-label">存储</span>
+            <span className="detail-value">{formatBytes(info.total_disk)}</span>
+            </div>
         </div>
         {info.gpu_cores && <div className="detail-item">
-          <span className="detail-label">GPU</span>
-          <span className="detail-value">{info.gpu_cores} Cores</span>
+            <div className="detail-icon">🎮</div>
+            <div className="detail-text">
+            <span className="detail-label">GPU</span>
+            <span className="detail-value">{info.gpu_cores} 核心</span>
+            </div>
         </div>}
         <div className="detail-item">
-          <span className="detail-label">CPU</span>
-          <span className="detail-value">{info.cpu_cores} Cores</span>
+            <div className="detail-icon">⚡</div>
+            <div className="detail-text">
+            <span className="detail-label">CPU</span>
+            <span className="detail-value">{info.cpu_cores} 核心</span>
+            </div>
         </div>
         <div className="detail-item">
-          <span className="detail-label">处理器</span>
-          <span className="detail-value">{info.cpu_info}</span>
+            <div className="detail-icon">⏱️</div>
+            <div className="detail-text">
+            <span className="detail-label">运行时间</span>
+            <span className="detail-value">{uptime}</span>
+            </div>
         </div>
-        <div className="detail-item">
-          <span className="detail-label">系统</span>
-          <span className="detail-value">{info.os_version}</span>
+        <div className="system-badge">
+            <div className="badge-glow"></div>
+            <span className="badge-text">{info.os_version}</span>
         </div>
-        <div className="detail-item">
-          <span className="detail-label">运行时间</span>
-          <span className="detail-value">{uptime}</span>
         </div>
-      </div>
     </div>
   );
 };
@@ -638,13 +638,18 @@ function App() {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          background: rgba(15, 15, 35, 0.6);
-          backdrop-filter: blur(20px);
-          border-radius: 20px;
+          background: rgba(15, 15, 35, 0.8);
+          backdrop-filter: blur(30px) saturate(150%);
+          border-radius: 24px;
           padding: 1.5rem 2rem;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+          border: 1px solid rgba(59, 130, 246, 0.2);
+          box-shadow: 
+            0 8px 32px rgba(0, 0, 0, 0.3),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
           animation: slide-down 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+          overflow: hidden;           /* 新增 */
+          min-height: 60px;          /* 新增 */
         }
 
         @keyframes slide-down {
@@ -659,34 +664,216 @@ function App() {
         }
 
         .system-time {
-          text-align: left;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+          flex-shrink: 0;            /* 新增 */
+          white-space: nowrap;       /* 新增 */
+          min-width: fit-content;    /* 新增 */
+        }
+
+        .system-clock {
+          font-size: 2.5rem;
+          font-weight: 300;
+          background: linear-gradient(135deg, #06b6d4, #3b82f6, #8b5cf6);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          text-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+          animation: pulse-glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+          from { filter: brightness(1); }
+          to { filter: brightness(1.2); }
+        }
+
+        .system-date {
+          font-size: 0.9rem;
+          color: #9ca3af;
+          font-weight: 400;
         }
 
         .system-details {
-          display: flex;
-          gap: 2rem;
-          align-items: center;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: nowrap;          /* 新增 */
+            overflow-x: auto;           /* 新增 */
+            overflow-y: hidden;         /* 新增 */
+            flex-shrink: 0;            /* 新增 */
+            max-width: calc(100vw - 20rem); /* 新增 */
+            scrollbar-width: none;      /* 新增 */
+            -ms-overflow-style: none;   /* 新增 */
+        }
+
+        .system-details::-webkit-scrollbar { /* 新增整个规则 */
+          display: none;
         }
 
         .detail-item {
           display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.5rem 0.75rem;
+          background: rgba(255, 255, 255, 0.03);
+          border-radius: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          transition: all 0.3s ease;
+        }
+
+        .detail-item:hover {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(59, 130, 246, 0.3);
+        }
+
+        .detail-icon {
+          font-size: 1.2rem;
+          opacity: 0.8;
+        }
+
+        .detail-text {
+          display: flex;
           flex-direction: column;
-          align-items: flex-end;
-          gap: 0.25rem;
+          gap: 0.125rem;
         }
 
         .detail-label {
-          font-size: 0.75rem;
-          color: #9ca3af;
+          font-size: 0.7rem;
+          color: #6b7280;
           text-transform: uppercase;
           letter-spacing: 0.05em;
+          font-weight: 500;
         }
 
         .detail-value {
-          font-size: 0.9rem;
-          font-weight: 500;
+          width: 70px;
+          font-size: 0.85rem;
+          font-weight: 600;
           color: #f3f4f6;
         }
+
+        .system-badge {
+          position: relative;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+          border: 1px solid rgba(59, 130, 246, 0.3);
+          border-radius: 16px;
+          padding: 0.75rem 1.5rem;
+          overflow: hidden;
+          flex-shrink: 0;            /* 新增 */
+          white-space: nowrap;       /* 新增 */
+        }
+
+        .badge-glow {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.05));
+          animation: badge-pulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes badge-pulse {
+          from { opacity: 0.5; }
+          to { opacity: 1; }
+        }
+
+        .badge-text {
+          position: relative;
+          z-index: 1;
+          font-size: 0.9rem;
+          font-weight: 600;
+          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+        }
+
+        .no-select {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+
+        .no-select * {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+          outline: none !important;
+        }
+
+        .no-select:focus,
+        .no-select *:focus {
+          outline: none !important;
+          border: none !important;
+          box-shadow: none !important;
+        }
+
+        .network-stats {
+          display: flex;
+          gap: 1rem;
+        }
+
+        .network-stat-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 0.75rem;
+          background: rgba(255, 255, 255, 0.05);
+          border-radius: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          flex-shrink: 0;            /* 新增 */
+          min-width: 80px;          /* 新增 */
+        }
+
+        .stat-indicator {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          animation: stat-pulse 1.5s ease-in-out infinite;
+        }
+
+        .download-indicator {
+          background: #0ea5e9;
+          box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+        }
+
+        .upload-indicator {
+          background: #10b981;
+          box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
+        @keyframes stat-pulse {
+          0%, 100% { 
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% { 
+            transform: scale(1.2);
+            opacity: 0.8;
+          }
+        }
+
+        .stat-value {
+          font-size: 0.6rem;
+          font-weight: 600;
+          color: #f3f4f6;
+        }
+
+        .stat-value-fixed {
+            width: 70px;               
+            text-align: right;
+            display: inline-block;
+            white-space: nowrap;       /* 新增 */
+            overflow: hidden;          /* 新增 */
+            text-overflow: ellipsis;   /* 新增 */
+        }
+
+
+
+
+
 
         .pulse-ring {
           animation: pulse-ring 2s infinite;
@@ -1072,7 +1259,7 @@ function App() {
             </HoloCard>
 
           {/* Network Activity */}
-          <HoloCard className="network-card">
+          <HoloCard className="network-card no-select">
             <NetworkChart data={networkData} />
           </HoloCard>
 
