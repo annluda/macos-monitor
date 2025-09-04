@@ -7,9 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os/exec"
-	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -56,7 +54,6 @@ type staticSystemInfo struct {
 	CPUInfo         string    `json:"cpu_info"`
 	CPUCores        int       `json:"cpu_cores"`
 	CPULogicalCores int       `json:"cpu_logical_cores"`
-	GPUCores        int       `json:"gpu_cores"`
 	TotalMemory     uint64    `json:"total_memory"`
 	TotalDisk       uint64    `json:"total_disk"`
 	LocalIP         string    `json:"local_ip"`
@@ -71,7 +68,6 @@ type dynamicSystemInfo struct {
 	DiskPercent   float64    `json:"disk_percent"`
 	DiskUsed      uint64     `json:"disk_used"`
 	Processes     []procInfo `json:"processes"`
-	GPUPercent    float64    `json:"gpu_percent"`
 }
 
 type procInfo struct {
@@ -96,20 +92,6 @@ func getMacOSVersion() string {
 		return "N/A"
 	}
 	return fmt.Sprintf("%s %s", strings.TrimSpace(string(productName)), strings.TrimSpace(string(productVersion)))
-}
-
-func getGPUCores() int {
-	out, err := exec.Command("system_profiler", "SPDisplaysDataType").Output()
-	if err != nil {
-		return 0
-	}
-	re := regexp.MustCompile(`Total Number of Cores: (\d+)`)
-	matches := re.FindStringSubmatch(string(out))
-	if len(matches) > 1 {
-		cores, _ := strconv.Atoi(matches[1])
-		return cores
-	}
-	return 0
 }
 
 func getLocalIP() string {
@@ -140,7 +122,6 @@ func staticSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 		CPUInfo:         cpuInfo[0].ModelName,
 		CPUCores:        physicalCores,
 		CPULogicalCores: logicalCores,
-		GPUCores:        getGPUCores(),
 		TotalMemory:     memInfo.Total,
 		TotalDisk:       diskInfo.Total,
 		LocalIP:         getLocalIP(),
@@ -151,41 +132,38 @@ func staticSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(info)
 }
 
-// NOTE: This function requires running the executable with sudo privileges.
-func getGPUUsage() float64 {
-	out, err := exec.Command("sudo", "/usr/bin/powermetrics", "--samplers", "gpu_power", "-i", "1000", "-n", "1").Output()
-	if err != nil {
-		log.Printf("Could not fetch powermetrics data for GPU: %v", err)
-		return 0.0
-	}
-	re := regexp.MustCompile(`GPU HW active residency:\s+(\d+\.?\d*)%`)
-	matches := re.FindStringSubmatch(string(out))
-	if len(matches) > 1 {
-		usage, _ := strconv.ParseFloat(matches[1], 64)
-		return usage
-	}
-	log.Printf("Could not parse GPU residency from powermetrics output")
-	return 0.0
-}
-
 func dynamicSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	cpuPercent, _ := cpu.Percent(0, false)
+	cpuPercent, err := cpu.Percent(0, false)
+	if err != nil || len(cpuPercent) == 0 {
+		log.Printf("Could not fetch CPU percentage: %v", err)
+		// Handle error appropriately, maybe return a JSON error response
+		return
+	}
 	memInfo, _ := mem.VirtualMemory()
 	diskInfo, _ := disk.Usage("/")
 
 	procs, _ := process.Processes()
 	processes := make([]procInfo, 0)
 	for _, p := range procs {
-		name, _ := p.Name()
-		cpuPercent, _ := p.CPUPercent()
-		memInfo, _ := p.MemoryInfo()
+		name, err := p.Name()
+		if err != nil {
+			continue
+		}
+		procCpuPercent, err := p.CPUPercent()
+		if err != nil {
+			continue
+		}
+		procMemInfo, err := p.MemoryInfo()
+		if err != nil {
+			continue
+		}
 		processes = append(processes, procInfo{
 			Pid:        p.Pid,
 			Name:       name,
-			CPUPercent: cpuPercent,
-			MemoryRss:  memInfo.RSS,
+			CPUPercent: procCpuPercent,
+			MemoryRss:  procMemInfo.RSS,
 		})
 	}
 
@@ -205,7 +183,6 @@ func dynamicSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 		DiskPercent:   diskInfo.UsedPercent,
 		DiskUsed:      diskInfo.Used,
 		Processes:     topProcesses,
-		GPUPercent:    getGPUUsage(),
 	}
 
 	json.NewEncoder(w).Encode(info)

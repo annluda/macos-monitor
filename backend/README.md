@@ -14,12 +14,4 @@ This directory contains the Go implementation of the backend service.
     go run main.go
     ```
 
-3.  **Running with GPU Monitoring (requires sudo):**
-
-    To enable GPU usage monitoring on Apple Silicon, the application needs to be run with `sudo` because it uses `powermetrics`.
-
-    ```sh
-    sudo go run main.go
-    ```
-
 The server will start on `http://localhost:8000`.

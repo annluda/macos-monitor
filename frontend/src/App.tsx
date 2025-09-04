@@ -7,7 +7,6 @@ interface StaticInfo {
   cpu_info: string; 
   cpu_cores: number; 
   cpu_logical_cores: number; 
-  gpu_cores: number | null;
   total_memory: number; 
   total_disk: number; 
   local_ip: string;
@@ -28,7 +27,6 @@ interface DynamicMetrics {
   disk_percent: number; 
   disk_used: number; 
   processes: Process[]; 
-  gpu_percent: number; 
 }
 
 // --- Helper Functions ---
@@ -296,10 +294,6 @@ const ProcessList: React.FC<{ processes: Process[] }> = ({ processes }) => {
 
 // --- Network Activity Chart ---
 const NetworkChart: React.FC<{ data: any[] }> = ({ data }) => {
-  const maxValue = Math.max(
-    ...data.map(d => Math.max(d.download, d.upload)),
-    1
-  );
 
   const currentDownload = data[data.length - 1]?.download || 0;
   const currentUpload = data[data.length - 1]?.upload || 0;
@@ -407,12 +401,6 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
             <span className="detail-value">{formatBytes(info.total_disk, 0)}</span>
             </div>
         </div>
-        {info.gpu_cores && <div className="detail-item">
-            <div className="detail-text">
-            <span className="detail-label">GPU</span>
-            <span className="detail-value">{info.gpu_cores} 核</span>
-            </div>
-        </div>}
         <div className="detail-item">
             <div className="detail-text">
             <span className="detail-label">CPU</span>
@@ -919,7 +907,7 @@ function App() {
 
         .metrics-grid {
           display: grid;
-          grid-template-columns: repeat(4, 1fr);
+          grid-template-columns: repeat(3, 1fr);
           gap: 2rem;
           animation: fade-in 1s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
         }
@@ -1230,17 +1218,6 @@ function App() {
                 percent={dynamicMetrics?.cpu_percent ?? 0}
                 label="CPU 使用率"
                 color={getGaugeColor(dynamicMetrics?.cpu_percent ?? 0)}
-              />
-            </div>
-          </HoloCard>
-
-          {/* GPU Usage */}
-          <HoloCard>
-            <div className="gauge-container">
-              <GlowingGauge
-                percent={dynamicMetrics?.gpu_percent ?? 0}
-                label="GPU 使用率"
-                color={getGaugeColor(dynamicMetrics?.gpu_percent ?? 0)}
               />
             </div>
           </HoloCard>

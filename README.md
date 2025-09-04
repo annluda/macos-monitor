@@ -1,10 +1,10 @@
 # macOS Monitor
 
-A web-based monitoring tool for macOS that displays real-time system information, including CPU, GPU, memory, disk usage, and network activity.
+A web-based monitoring tool for macOS that displays real-time system information, including CPU, memory, disk usage, and network activity.
 
 ## Features
 
-*   **Real-time Metrics:** View live data for CPU, GPU, memory, and disk usage.
+*   **Real-time Metrics:** View live data for CPU, memory, and disk usage.
 *   **Network Activity:** Monitor network download and upload speeds.
 *   **Top Processes:** See a list of the top 5 processes by CPU usage.
 *   **System Information:** Get a detailed overview of your system's hardware and software.
