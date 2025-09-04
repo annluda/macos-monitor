@@ -307,7 +307,7 @@ const NetworkChart: React.FC<{ data: any[] }> = ({ data }) => {
         <div className="network-stats">
           <div className="network-stat-item">
             <div className="stat-indicator download-indicator"></div>
-            <span className="stat-value stat-value-fixed">↓ {formatBytes(currentDownload)}/s</span>
+            <span className="stat-value stat-value-fixed">↓ {formatBytes(Math.abs(currentDownload))}/s</span>
           </div>
           <div className="network-stat-item">
             <div className="stat-indicator upload-indicator"></div>
@@ -318,6 +318,16 @@ const NetworkChart: React.FC<{ data: any[] }> = ({ data }) => {
       <div className="relative w-full" style={{ height: 'calc(100% - 4rem)' }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+            <defs>
+              <linearGradient id="downloadGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.4}/>
+                <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.0}/>
+              </linearGradient>
+              <linearGradient id="uploadGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity={0.4}/>
+                <stop offset="100%" stopColor="#10b981" stopOpacity={0.0}/>
+              </linearGradient>
+            </defs>
             <Area
               type="monotone"
               dataKey="download"
@@ -480,7 +490,7 @@ function App() {
         const newData = [...prev.slice(1)];
         newData.push({
           time: prev[prev.length - 1].time + 1,
-          download: downSpeed,
+          download: -downSpeed,
           upload: upSpeed,
         });
         return newData;
