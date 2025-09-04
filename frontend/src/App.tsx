@@ -907,7 +907,7 @@ function App() {
 
         .metrics-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 2rem;
           animation: fade-in 1s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
         }
