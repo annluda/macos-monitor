@@ -17,9 +17,9 @@ A web-based monitoring tool for macOS that displays real-time system information
     *   Vite
     *   Recharts
 *   **Backend:**
-    *   FastAPI (Python)
-    *   psutil
-    *   websockets
+    *   Go
+    *   gopsutil
+    *   Gorilla WebSocket
 
 ## Installation
 
@@ -32,7 +32,7 @@ A web-based monitoring tool for macOS that displays real-time system information
 2.  **Install backend dependencies:**
     ```bash
     cd backend
-    pip install -r requirements.txt
+    go mod tidy
     ```
 
 3.  **Install frontend dependencies:**
@@ -46,7 +46,7 @@ A web-based monitoring tool for macOS that displays real-time system information
 1.  **Start the backend server:**
     ```bash
     cd backend
-    uvicorn app:app --reload
+    go run main.go
     ```
     The backend server will be running at `http://localhost:8000`.
 
