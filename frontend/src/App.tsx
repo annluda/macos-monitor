@@ -667,7 +667,7 @@ function App() {
         }
 
         .holo-card:hover {
-          transform: translateY(-8px) scale(1.02);
+          transform: translateY(-2px) scale(1.02);
           border-color: rgba(59, 130, 246, 0.3);
           box-shadow: 
             0 20px 40px rgba(0, 0, 0, 0.4),
