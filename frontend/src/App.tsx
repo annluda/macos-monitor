@@ -272,7 +272,7 @@ const LoadAverage: React.FC<{
 
   const getLoadColor = (load: number, cores: number) => {
     const ratio = load / cores;
-    if (ratio < 0.5) return '#06b6d4'; // Cyan
+    if (ratio < 0.5) return '#10b981'; // Cyan
     if (ratio < 1) return '#f59e0b'; // Amber
     return '#ef4444'; // Red
   };
