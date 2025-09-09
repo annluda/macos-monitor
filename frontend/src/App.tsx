@@ -1031,13 +1031,13 @@ function App() {
             transform: translateX(0) scaleY(1);
         }
         25% { 
-            transform: translateX(-5px) scaleY(0.95);
+            transform: translateX(-2px) scaleY(0.95);
         }
         50% { 
             transform: translateX(0) scaleY(1.05);
         }
         75% { 
-            transform: translateX(5px) scaleY(0.98);
+            transform: translateX(2px) scaleY(0.98);
         }
         }
 
