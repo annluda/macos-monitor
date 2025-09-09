@@ -75,7 +75,7 @@ const AnimatedBackground: React.FC = () => {
 };
 
 // --- Glowing Gauge Component ---
-const GlowingGauge: React.FC<{ percent: number; label: string; color: string }> = ({ percent, label, color }) => {
+const GlowingGauge: React.FC<{ percent: number; label: string; color: string; animationDelay?: string }> = ({ percent, label, color, animationDelay }) => {
   const circumference = 2 * Math.PI * 45;
   const strokeDasharray = circumference;
   const strokeDashoffset = circumference - (percent / 100) * circumference;
@@ -120,6 +120,7 @@ const GlowingGauge: React.FC<{ percent: number; label: string; color: string }> 
             fill="none"
             opacity="0.6"
             className="pulse-ring"
+            style={{ animationDelay }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -290,6 +291,7 @@ const LoadAverage: React.FC<{
             percent={calculatePercent(load.load1, cpuCores)}
             label="系统负载" // 1 min
             color={getLoadColor(load.load1, cpuCores)}
+            animationDelay="0s"
           />
         </div>
         
@@ -300,6 +302,7 @@ const LoadAverage: React.FC<{
               percent={calculatePercent(load.load5, cpuCores)}
               label="5 min"
               color={getLoadColor(load.load5, cpuCores)}
+              animationDelay="0.3s"
             />
           </div>
           <div style={{ zoom: 0.5 }}>
@@ -307,6 +310,7 @@ const LoadAverage: React.FC<{
               percent={calculatePercent(load.load15, cpuCores)}
               label="15 min"
               color={getLoadColor(load.load15, cpuCores)}
+              animationDelay="0.6s"
             />
           </div>
         </div>
@@ -1291,6 +1295,7 @@ function App() {
                 percent={dynamicMetrics?.cpu_percent ?? 0}
                 label="CPU 使用率"
                 color={getGaugeColor(dynamicMetrics?.cpu_percent ?? 0)}
+                animationDelay="0s"
               />
             </div>
           </HoloCard>
@@ -1302,6 +1307,7 @@ function App() {
                 percent={dynamicMetrics?.memory_percent ?? 0}
                 label="内存使用率"
                 color={getGaugeColor(dynamicMetrics?.memory_percent ?? 0)}
+                animationDelay="0.5s"
               />
             </div>
           </HoloCard>
