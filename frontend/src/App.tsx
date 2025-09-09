@@ -254,7 +254,7 @@ const WaterBall: React.FC<{ percent: number; label: string }> = ({ percent, labe
           <span className="text-2xl font-bold text-cyan-400 glow-text">
             {percent.toFixed(1)}%
           </span>
-          <span className="text-xs text-gray-400 mt-1">{label}</span>
+          <span className="text-xs text-gray-600 mt-1">{label}</span>
         </div>
       </div>
     </div>
@@ -282,30 +282,27 @@ const LoadAverage: React.FC<{
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center">
-      <h3 className="text-lg font-semibold mb-4 text-transparent bg-gradient-to-r from-yellow-400 to-red-400 bg-clip-text">
-        Load Average
-      </h3>
+    <div className="w-full flex flex-col items-center justify-center">
       <div className="flex items-center justify-between w-full">
         {/* 1 minute gauge - left side, centered */}
         <div className="flex-1 flex justify-center">
           <GlowingGauge
             percent={calculatePercent(load.load1, cpuCores)}
-            label="系统负载(1 min)"
+            label="系统负载" // 1 min
             color={getLoadColor(load.load1, cpuCores)}
           />
         </div>
         
         {/* 5min and 15min gauges - right side, stacked */}
         <div className="flex flex-col gap-2">
-          <div style={{ transform: 'scale(0.5)' }}>
+          <div style={{ zoom: 0.5 }}>
             <GlowingGauge
               percent={calculatePercent(load.load5, cpuCores)}
               label="5 min"
               color={getLoadColor(load.load5, cpuCores)}
             />
           </div>
-          <div style={{ transform: 'scale(0.5)' }}>
+          <div style={{ zoom: 0.5 }}>
             <GlowingGauge
               percent={calculatePercent(load.load15, cpuCores)}
               label="15 min"
@@ -994,7 +991,7 @@ function App() {
           display: flex;
           align-items: center;
           justify-content: center;
-          height: 160px;
+          height: 80%;
         }
 
         .network-card {
@@ -1324,10 +1321,12 @@ function App() {
 
           {/* load average */}
           <HoloCard>
-            <LoadAverage
-              load={dynamicMetrics?.load_average}
-              cpuCores={staticInfo?.cpu_logical_cores ?? 1}
-            />
+            <div className="gauge-container">
+              <LoadAverage
+                load={dynamicMetrics?.load_average}
+                cpuCores={staticInfo?.cpu_logical_cores ?? 1}
+              />
+            </div>
           </HoloCard>
 
           {/* Network Activity */}
