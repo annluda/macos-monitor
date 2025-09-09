@@ -27,6 +27,11 @@ interface DynamicMetrics {
   disk_percent: number; 
   disk_used: number; 
   processes: Process[]; 
+  load_average: { 
+    load1: number; 
+    load5: number; 
+    load15: number; 
+  }; 
 }
 
 // --- Helper Functions ---
@@ -251,6 +256,52 @@ const WaterBall: React.FC<{ percent: number; label: string }> = ({ percent, labe
           </span>
           <span className="text-xs text-gray-400 mt-1">{label}</span>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Load Average Component ---
+const LoadAverage: React.FC<{
+  load: { load1: number; load5: number; load15: number } | undefined;
+  cpuCores: number;
+}> = ({ load, cpuCores }) => {
+  if (!load) {
+    return null;
+  }
+
+  const getLoadColor = (load: number, cores: number) => {
+    const ratio = load / cores;
+    if (ratio < 0.5) return '#06b6d4'; // Cyan
+    if (ratio < 1) return '#f59e0b'; // Amber
+    return '#ef4444'; // Red
+  };
+
+  const calculatePercent = (load: number, cores: number) => {
+    return (load / cores) * 100;
+  };
+
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center">
+      <h3 className="text-lg font-semibold mb-4 text-transparent bg-gradient-to-r from-yellow-400 to-red-400 bg-clip-text">
+        Load Average
+      </h3>
+      <div className="flex justify-around w-full">
+        <GlowingGauge
+          percent={calculatePercent(load.load1, cpuCores)}
+          label="1 min"
+          color={getLoadColor(load.load1, cpuCores)}
+        />
+        <GlowingGauge
+          percent={calculatePercent(load.load5, cpuCores)}
+          label="5 min"
+          color={getLoadColor(load.load5, cpuCores)}
+        />
+        <GlowingGauge
+          percent={calculatePercent(load.load15, cpuCores)}
+          label="15 min"
+          color={getLoadColor(load.load15, cpuCores)}
+        />
       </div>
     </div>
   );
@@ -1254,7 +1305,15 @@ function App() {
                 {formatBytes(dynamicMetrics?.disk_used ?? 0)}
                 </span>
             </div>
-            </HoloCard>
+          </HoloCard>
+
+          {/* load average */}
+          <HoloCard>
+            <LoadAverage
+              load={dynamicMetrics?.load_average}
+              cpuCores={staticInfo?.cpu_logical_cores ?? 1}
+            />
+          </HoloCard>
 
           {/* Network Activity */}
           <HoloCard className="network-card no-select">

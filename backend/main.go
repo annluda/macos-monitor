@@ -16,6 +16,7 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/shirou/gopsutil/v3/load"
 	psutil_net "github.com/shirou/gopsutil/v3/net"
 	"github.com/shirou/gopsutil/v3/process"
 )
@@ -62,12 +63,13 @@ type staticSystemInfo struct {
 }
 
 type dynamicSystemInfo struct {
-	CPUPercent    float64    `json:"cpu_percent"`
-	MemoryPercent float64    `json:"memory_percent"`
-	MemoryUsed    uint64     `json:"memory_used"`
-	DiskPercent   float64    `json:"disk_percent"`
-	DiskUsed      uint64     `json:"disk_used"`
-	Processes     []procInfo `json:"processes"`
+	CPUPercent    float64     `json:"cpu_percent"`
+	MemoryPercent float64     `json:"memory_percent"`
+	MemoryUsed    uint64      `json:"memory_used"`
+	DiskPercent   float64     `json:"disk_percent"`
+	DiskUsed      uint64      `json:"disk_used"`
+	LoadAverage   *load.AvgStat `json:"load_average"`
+	Processes     []procInfo  `json:"processes"`
 }
 
 type procInfo struct {
@@ -143,6 +145,7 @@ func dynamicSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	memInfo, _ := mem.VirtualMemory()
 	diskInfo, _ := disk.Usage("/")
+	loadAvg, _ := load.Avg()
 
 	procs, _ := process.Processes()
 	processes := make([]procInfo, 0)
@@ -182,6 +185,7 @@ func dynamicSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 		MemoryUsed:    memInfo.Used,
 		DiskPercent:   diskInfo.UsedPercent,
 		DiskUsed:      diskInfo.Used,
+		LoadAverage:   loadAvg,
 		Processes:     topProcesses,
 	}
 
