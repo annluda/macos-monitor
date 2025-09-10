@@ -1314,14 +1314,11 @@ function App() {
 
           {/* Disk Usage */}
           <HoloCard>
-            <WaterBall 
+            <div className="gauge-container">
+              <WaterBall 
                 percent={dynamicMetrics?.disk_percent ?? 0}
                 label="磁盘使用"
-            />
-            <div className="mt-4 text-center">
-                <span className="text-xs text-gray-500">
-                {formatBytes(dynamicMetrics?.disk_used ?? 0)}
-                </span>
+              />
             </div>
           </HoloCard>
 
