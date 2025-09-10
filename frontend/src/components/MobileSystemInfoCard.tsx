@@ -11,6 +11,7 @@ const MobileSystemInfoCard: React.FC<MobileSystemInfoCardProps> = ({ osVersion, 
 
   return (
     <div className="mobile-info-card-content">
+      <h3 className="text-lg font-semibold mb-4 text-transparent bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text">系统信息</h3>
       <div className="info-item">
         <span className="info-label">系统版本</span>
         <span className="info-value">{osVersion}</span>

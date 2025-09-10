@@ -44,6 +44,7 @@ const MobileDashboardStack: React.FC<MobileDashboardStackProps> = (
 
   return (
     <div className="mobile-dashboard-stack">
+      <h3 className="text-lg font-semibold mb-4 text-transparent bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text">资源监控</h3>
       <MetricItem
         label="CPU"
         percent={cpuPercent}
