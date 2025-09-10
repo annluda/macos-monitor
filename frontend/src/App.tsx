@@ -282,27 +282,25 @@ const DialGauge: React.FC<{
   const currentAngle = startAngle + (percent / 100) * totalAngle;
 
   // 计算弧形路径
-  const arcPath = (startA: number, endA: number, r: number) => {
-    const start = polarToCartesian(centerPos, centerPos, r, endA);
-    const end = polarToCartesian(centerPos, centerPos, r, startA);
-    const largeArcFlag = endA - startA <= 180 ? "0" : "1";
-    return [
-      "M", start.x, start.y,
-      "A", r, r, 0, largeArcFlag, 0, end.x, end.y
-    ].join(" ");
-  };
-
-  const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
-    const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+  const polarToCartesian = (centerX: number, centerY: number, r: number, angleInDegrees: number) => {
+    const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
     return {
-      x: centerX + (radius * Math.cos(angleInRadians)),
-      y: centerY + (radius * Math.sin(angleInRadians))
+      x: centerX + r * Math.cos(angleInRadians),
+      y: centerY + r * Math.sin(angleInRadians),
     };
   };
 
-  // 计算指针位置
-  const needleEnd = polarToCartesian(centerPos, centerPos, radius - 8, currentAngle);
+  const arcPath = (startA: number, endA: number, r: number) => {
+    const start = polarToCartesian(centerPos, centerPos, r, endA);
+    const end = polarToCartesian(centerPos, centerPos, r, startA);
+    const largeArcFlag = endA - startA <= 180 ? '0' : '1';
+    return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+  };
+  
+  // 指针长度
+  const needleLength = radius - 8;
 
+  // 根据数值决定颜色
   const getNeedleColor = () => {
     const ratio = value / (maxValue / 2); // Color ratio based on ncpu (maxValue/2)
     if (ratio < 0.7) return '#10b981'; // Green
@@ -314,15 +312,8 @@ const DialGauge: React.FC<{
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
       <div className="relative">
-        <svg width={svgSize} height={svgSize}>
+        <svg width={svgSize} height={svgSize} style={{ overflow: 'visible' }}>
           <defs>
-            <filter id={`glow-large`}>
-              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
             <linearGradient id={`dialGradient-bg-large`} x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" stopColor="#10b98190" />
                 <stop offset="50%" stopColor="#f59f0b90" />
@@ -338,19 +329,24 @@ const DialGauge: React.FC<{
             fill="none"
             strokeLinecap="square"
           />
-
+          
           {/* Needle */}
           <line
             x1={centerPos}
             y1={centerPos}
-            x2={needleEnd.x}
-            y2={needleEnd.y}
+            // 初始时让指针指向上方
+            x2={centerPos}
+            y2={centerPos - needleLength}
             stroke="gray"
-            strokeWidth="1"
+            strokeWidth="2"
             strokeLinecap="round"
-            filter={`url(#glow-large)`}
             style={{
-              transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+              // 对 transform 属性应用动画
+              transition: 'transform 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+              // 通过 rotate 实现旋转
+              transform: `rotate(${currentAngle}deg)`,
+              // 设置旋转中心
+              transformOrigin: `${centerPos}px ${centerPos}px`,
             }}
           />
 
@@ -358,15 +354,15 @@ const DialGauge: React.FC<{
           <circle
             cx={centerPos}
             cy={centerPos}
-            r="2"
-            fill="#700f0fff"
-            filter={`url(#glow-large)`}
+            r="4"
+            fill={needleColor} // 中心点颜色也随数值变化
           />
+
 
           {/* Tick marks */}
           {[0, 0.25, 0.5, 0.75, 1].map(tickPercent => {
             const tickAngle = startAngle + tickPercent * totalAngle;
-            const tickStart = polarToCartesian(centerPos, centerPos, radius + 5, tickAngle);
+            const tickStart = polarToCartesian(centerPos, centerPos, radius + 3, tickAngle);
             const tickEnd = polarToCartesian(centerPos, centerPos, radius - 5, tickAngle);
             return (
               <line
@@ -377,7 +373,7 @@ const DialGauge: React.FC<{
                 y2={tickEnd.y}
                 stroke="rgba(255,255,255,0.3)"
                 strokeWidth="1"
-                strokeLinecap="square"
+                strokeLinecap="round"
               />
             );
           })}
@@ -400,6 +396,7 @@ const DialGauge: React.FC<{
   );
 };
 
+
 // --- Load Average Component with Dial Gauges ---
 const LoadAverage: React.FC<{
   load: { load1: number; load5: number; load15: number } | undefined;
@@ -414,7 +411,7 @@ const LoadAverage: React.FC<{
 
   return (
     <div className="w-full flex flex-col items-center justify-center">
-      <div className="flex items-center justify-between w-full">
+      <div className="flex items-center justify-between">
         {/* 1 minute gauge */}
         <div className="flex-1 flex justify-center">
           <DialGauge
@@ -426,14 +423,14 @@ const LoadAverage: React.FC<{
 
         {/* 5min and 15min gauges */}
         <div className="flex flex-col gap-2">
-          <div style={{ zoom: 0.6 }}>
+          <div style={{ zoom: 0.5 }}>
             <DialGauge
               value={load.load5}
               maxValue={maxValue}
               label="5 min"
             />
           </div>
-          <div style={{ zoom: 0.6 }}>
+          <div style={{ zoom: 0.5 }}>
             <DialGauge
               value={load.load15}
               maxValue={maxValue}
