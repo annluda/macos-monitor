@@ -263,24 +263,24 @@ const WaterBall: React.FC<{ percent: number; label: string }> = ({ percent, labe
 };
 
 // --- Dial Gauge Component ---
-const DialGauge: React.FC<{ 
-  percent: number; 
-  label: string; 
-  color: string; 
-  size?: 'large' | 'small';
-  animationDelay?: string;
-}> = ({ percent, label, color, size = 'large', animationDelay }) => {
-  const radius = size === 'large' ? 45 : 30;
-  const strokeWidth = size === 'large' ? 8 : 6;
-  const svgSize = size === 'large' ? 120 : 80;
+const DialGauge: React.FC<{
+  value: number;
+  maxValue: number;
+  label: string;
+}> = ({ value, maxValue, label }) => {
+  const radius = 45;
+  const strokeWidth = 8;
+  const svgSize = 120;
   const centerPos = svgSize / 2;
-  
+
   // 仪表盘从-135度到135度，总共270度
   const startAngle = -135;
   const endAngle = 135;
   const totalAngle = endAngle - startAngle;
+
+  const percent = Math.min((value / maxValue) * 100, 100);
   const currentAngle = startAngle + (percent / 100) * totalAngle;
-  
+
   // 计算弧形路径
   const arcPath = (startA: number, endA: number, r: number) => {
     const start = polarToCartesian(centerPos, centerPos, r, endA);
@@ -291,7 +291,7 @@ const DialGauge: React.FC<{
       "A", r, r, 0, largeArcFlag, 0, end.x, end.y
     ].join(" ");
   };
-  
+
   const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
     const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
     return {
@@ -299,106 +299,99 @@ const DialGauge: React.FC<{
       y: centerY + (radius * Math.sin(angleInRadians))
     };
   };
-  
+
   // 计算指针位置
-  const needleEnd = polarToCartesian(centerPos, centerPos, radius - 10, currentAngle);
-  
+  const needleEnd = polarToCartesian(centerPos, centerPos, radius - 8, currentAngle);
+
+  const getNeedleColor = () => {
+    const ratio = value / (maxValue / 2); // Color ratio based on ncpu (maxValue/2)
+    if (ratio < 0.7) return '#10b981'; // Green
+    if (ratio < 1.0) return '#f59e0b'; // Amber
+    return '#ef4444'; // Red
+  };
+  const needleColor = getNeedleColor();
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center">
       <div className="relative">
         <svg width={svgSize} height={svgSize}>
           <defs>
-            <filter id={`glow-${size}`}>
+            <filter id={`glow-large`}>
               <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
               <feMerge>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
-            <linearGradient id={`dialGradient-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor={color} stopOpacity="0.8"/>
-              <stop offset="100%" stopColor={color} stopOpacity="0.4"/>
+            <linearGradient id={`dialGradient-bg-large`} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#10b98190" />
+                <stop offset="50%" stopColor="#f59f0b90" />
+                <stop offset="100%" stopColor="#ef444490" />
             </linearGradient>
           </defs>
-          
+
           {/* Background arc */}
           <path
             d={arcPath(startAngle, endAngle, radius)}
-            stroke="rgba(255,255,255,0.1)"
+            stroke={`url(#dialGradient-bg-large)`}
             strokeWidth={strokeWidth}
             fill="none"
-            strokeLinecap="round"
+            strokeLinecap="square"
           />
-          
-          {/* Progress arc */}
-          <path
-            d={arcPath(startAngle, currentAngle, radius)}
-            stroke={`url(#dialGradient-${size})`}
-            strokeWidth={strokeWidth}
-            fill="none"
-            strokeLinecap="round"
-            filter={`url(#glow-${size})`}
-            className="dial-progress"
-            style={{
-              transition: 'd 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
-          />
-          
-          {/* Center dot */}
-          <circle
-            cx={centerPos}
-            cy={centerPos}
-            r="4"
-            fill={color}
-            filter={`url(#glow-${size})`}
-          />
-          
+
           {/* Needle */}
           <line
             x1={centerPos}
             y1={centerPos}
             x2={needleEnd.x}
             y2={needleEnd.y}
-            stroke={color}
-            strokeWidth="3"
+            stroke="gray"
+            strokeWidth="1"
             strokeLinecap="round"
-            filter={`url(#glow-${size})`}
-            className="dial-needle"
+            filter={`url(#glow-large)`}
             style={{
               transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-              animationDelay
             }}
           />
-          
+
+          {/* Center dot */}
+          <circle
+            cx={centerPos}
+            cy={centerPos}
+            r="2"
+            fill="#700f0fff"
+            filter={`url(#glow-large)`}
+          />
+
           {/* Tick marks */}
-          {[0, 25, 50, 75, 100].map(tick => {
-            const tickAngle = startAngle + (tick / 100) * totalAngle;
+          {[0, 0.25, 0.5, 0.75, 1].map(tickPercent => {
+            const tickAngle = startAngle + tickPercent * totalAngle;
             const tickStart = polarToCartesian(centerPos, centerPos, radius + 5, tickAngle);
             const tickEnd = polarToCartesian(centerPos, centerPos, radius - 5, tickAngle);
             return (
               <line
-                key={tick}
+                key={tickPercent}
                 x1={tickStart.x}
                 y1={tickStart.y}
                 x2={tickEnd.x}
                 y2={tickEnd.y}
                 stroke="rgba(255,255,255,0.3)"
-                strokeWidth="2"
-                strokeLinecap="round"
+                strokeWidth="1"
+                strokeLinecap="square"
               />
             );
           })}
         </svg>
-        
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" 
-             style={{ marginTop: size === 'large' ? '10px' : '5px' }}>
-          <span 
-            className={`font-bold ${size === 'large' ? 'text-xl' : 'text-sm'}`} 
-            style={{ color }}
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
+             style={{ marginTop: '60px'}}>
+          <span
+            className={`font-bold text-xl`}
+            style={{ color: needleColor }}
           >
-            {percent.toFixed(1)}%
+            {value.toFixed(2)}
           </span>
-          <span className={`text-gray-400 mt-1 ${size === 'large' ? 'text-xs' : 'text-[10px]'}`}>
+          <span className={`text-gray-400 mt-1 text-xs`}>
             {label}
           </span>
         </div>
@@ -416,47 +409,35 @@ const LoadAverage: React.FC<{
     return null;
   }
 
-  const getLoadColor = (load: number, cores: number) => {
-    const ratio = load / cores;
-    if (ratio < 0.5) return '#10b981'; // Green
-    if (ratio < 1) return '#f59e0b'; // Amber
-    return '#ef4444'; // Red
-  };
-
-  const calculatePercent = (load: number, cores: number) => {
-    return Math.min((load / cores) * 100, 100); // Cap at 100%
-  };
+  // The gauge's maximum value is 2x the number of CPU cores.
+  const maxValue = cpuCores * 2;
 
   return (
     <div className="w-full flex flex-col items-center justify-center">
-      <div className="flex items-center justify-between">
-        {/* 1 minute gauge - left side, centered */}
+      <div className="flex items-center justify-between w-full">
+        {/* 1 minute gauge */}
         <div className="flex-1 flex justify-center">
           <DialGauge
-            percent={calculatePercent(load.load1, cpuCores)}
+            value={load.load1}
+            maxValue={maxValue}
             label="系统负载"
-            color={getLoadColor(load.load1, cpuCores)}
-            size="large"
-            animationDelay="0s"
           />
         </div>
-        
-        {/* 5min and 15min gauges - right side, stacked */}
+
+        {/* 5min and 15min gauges */}
         <div className="flex flex-col gap-2">
-          <div style={{ zoom: 0.5 }}>
+          <div style={{ zoom: 0.6 }}>
             <DialGauge
-              percent={calculatePercent(load.load5, cpuCores)}
+              value={load.load5}
+              maxValue={maxValue}
               label="5 min"
-              color={getLoadColor(load.load5, cpuCores)}
-              animationDelay="0.3s"
             />
           </div>
-          <div style={{ zoom: 0.5 }}>
+          <div style={{ zoom: 0.6 }}>
             <DialGauge
-              percent={calculatePercent(load.load15, cpuCores)}
+              value={load.load15}
+              maxValue={maxValue}
               label="15 min"
-              color={getLoadColor(load.load15, cpuCores)}
-              animationDelay="0.1s"
             />
           </div>
         </div>
@@ -1207,11 +1188,6 @@ function App() {
         .dial-progress {
           filter: drop-shadow(0 0 8px currentColor);
         }
-
-        .dial-needle {
-          filter: drop-shadow(0 0 4px currentColor);
-        }
-
 
         .text-xl {
           font-size: 1.25rem; /* 20px */
