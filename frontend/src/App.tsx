@@ -624,6 +624,8 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
 };
 
 // --- Main App Component ---
+const API_BASE_URL = '172.20.10.2:8000';
+
 function App() {
   const [staticInfo, setStaticInfo] = useState<StaticInfo | null>(null);
   const [dynamicMetrics, setDynamicMetrics] = useState<DynamicMetrics | null>(null);
@@ -638,7 +640,7 @@ function App() {
 
   // Fetch static system info
   useEffect(() => {
-    fetch('http://localhost:8000/api/system/static')
+    fetch(`http://${API_BASE_URL}/api/system/static`)
       .then(res => res.json())
       .then(setStaticInfo)
       .catch(console.error);
@@ -647,7 +649,7 @@ function App() {
   // Fetch dynamic metrics every 2 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      fetch('http://localhost:8000/api/system/dynamic')
+      fetch(`http://${API_BASE_URL}/api/system/dynamic`)
         .then(res => res.json())
         .then(setDynamicMetrics)
         .catch(console.error);
@@ -657,7 +659,7 @@ function App() {
 
   // WebSocket for real-time network data
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:8000/ws/network');
+    const ws = new WebSocket(`ws://${API_BASE_URL}/ws/network`);
     ws.onmessage = (event) => {
       const netData = JSON.parse(event.data);
       const now = Date.now();
