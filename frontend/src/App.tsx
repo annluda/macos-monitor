@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { useResponsive } from './hooks/useResponsive';
+import MobileDashboardStack from './components/MobileDashboardStack';
+import MobileSystemInfoCard from './components/MobileSystemInfoCard';
 
 // --- Type Definitions ---
 interface StaticInfo { 
@@ -480,14 +483,14 @@ const ProcessList: React.FC<{ processes: Process[] }> = ({ processes }) => {
 };
 
 // --- Network Activity Chart ---
-const NetworkChart: React.FC<{ data: any[] }> = ({ data }) => {
+const NetworkChart: React.FC<{ data: any[], isMobile: boolean }> = ({ data, isMobile }) => {
 
   const currentDownload = data[data.length - 1]?.download || 0;
   const currentUpload = data[data.length - 1]?.upload || 0;
 
   return (
-    <div className="w-full h-full">
-      <div className="flex justify-between items-center mb-4">
+    <div className="w-full h-full flex flex-col">
+      <div className="flex justify-between items-center mb-4 flex-shrink-0 chart-header">
         <h3 className="text-lg font-semibold text-transparent bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text">
           网络活动
         </h3>
@@ -502,46 +505,42 @@ const NetworkChart: React.FC<{ data: any[] }> = ({ data }) => {
           </div>
         </div>
       </div>
-      <div className="relative w-full" style={{ height: 'calc(100% - 4rem)' }}>
+      <div className="relative w-full flex-grow">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
-            <defs>
-              <linearGradient id="downloadGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.4}/>
-                <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.0}/>
-              </linearGradient>
-              <linearGradient id="uploadGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity={0.4}/>
-                <stop offset="100%" stopColor="#10b981" stopOpacity={0.0}/>
-              </linearGradient>
-            </defs>
+          <AreaChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+            {!isMobile && (
+              <defs>
+                <linearGradient id="downloadGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.4}/>
+                  <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.0}/>
+                </linearGradient>
+                <linearGradient id="uploadGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.4}/>
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.0}/>
+                </linearGradient>
+              </defs>
+            )}
             <Area
               type="monotone"
               dataKey="download"
               stroke="#0ea5e9"
-              strokeWidth={3}
+              strokeWidth={isMobile ? 2 : 3}
               fillOpacity={1}
-              fill="url(#downloadGradient)"
-              strokeDasharray="0"
+              fill={isMobile ? 'none' : 'url(#downloadGradient)'}
               dot={false}
               activeDot={false}
-              style={{
-                filter: 'drop-shadow(0 0 8px #0ea5e940)',
-              }}
+              style={!isMobile ? { filter: 'drop-shadow(0 0 8px #0ea5e940)' } : {}}
             />
             <Area
               type="monotone"
               dataKey="upload"
               stroke="#10b981"
-              strokeWidth={3}
+              strokeWidth={isMobile ? 2 : 3}
               fillOpacity={1}
-              fill="url(#uploadGradient)"
-              strokeDasharray="0"
+              fill={isMobile ? 'none' : 'url(#uploadGradient)'}
               dot={false}
               activeDot={false}
-              style={{
-                filter: 'drop-shadow(0 0 8px #10b98140)',
-              }}
+              style={!isMobile ? { filter: 'drop-shadow(0 0 8px #10b98140)' } : {}}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -551,20 +550,15 @@ const NetworkChart: React.FC<{ data: any[] }> = ({ data }) => {
 };
 
 // --- System Info Header ---
-const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
-  const [uptime, setUptime] = useState('');
+const SystemInfoHeader: React.FC<{ info: StaticInfo | null, uptime: string }> = ({ info, uptime }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    if (!info) return;
-    const bootTime = new Date(info.boot_time).getTime();
     const interval = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(now);
-      setUptime(formatUptime(Math.floor((now.getTime() - bootTime) / 1000)));
+      setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(interval);
-  }, [info]);
+  }, []);
 
   if (!info) return null;
 
@@ -627,6 +621,7 @@ const SystemInfoHeader: React.FC<{ info: StaticInfo | null }> = ({ info }) => {
 const API_BASE_URL = '172.20.10.2:8000';
 
 function App() {
+  const { isMobile } = useResponsive();
   const [staticInfo, setStaticInfo] = useState<StaticInfo | null>(null);
   const [dynamicMetrics, setDynamicMetrics] = useState<DynamicMetrics | null>(null);
   const [networkData, setNetworkData] = useState(() => 
@@ -636,13 +631,26 @@ function App() {
       upload: 0,
     }))
   );
+  const [uptime, setUptime] = useState('');
   const lastNetworkData = useRef<{ time: number; sent: number; recv: number } | null>(null);
 
-  // Fetch static system info
+  // Fetch static system info & calculate uptime
   useEffect(() => {
     fetch(`http://${API_BASE_URL}/api/system/static`)
       .then(res => res.json())
-      .then(setStaticInfo)
+      .then(data => {
+        setStaticInfo(data);
+        if (data && data.boot_time) {
+          const bootTime = new Date(data.boot_time).getTime();
+          const updateUptime = () => {
+            const now = new Date();
+            setUptime(formatUptime(Math.floor((now.getTime() - bootTime) / 1000)));
+          };
+          updateUptime();
+          const interval = setInterval(updateUptime, 1000);
+          return () => clearInterval(interval);
+        }
+      })
       .catch(console.error);
   }, []);
 
@@ -698,6 +706,88 @@ function App() {
     if (percent < 80) return '#f59e0b'; // Amber
     return '#ef4444'; // Red
   };
+
+  const renderDesktopView = () => (
+    <>
+      <SystemInfoHeader info={staticInfo} uptime={uptime} />
+      <div className="pt-32 pb-8 px-8 relative z-10">
+        <div className="metrics-grid">
+          <HoloCard>
+            <div className="gauge-container">
+              <GlowingGauge
+                percent={dynamicMetrics?.cpu_percent ?? 0}
+                label="CPU 使用率"
+                color={getGaugeColor(dynamicMetrics?.cpu_percent ?? 0)}
+                animationDelay="0s"
+              />
+            </div>
+          </HoloCard>
+          <HoloCard>
+            <div className="gauge-container">
+              <GlowingGauge
+                percent={dynamicMetrics?.memory_percent ?? 0}
+                label="内存使用率"
+                color={getGaugeColor(dynamicMetrics?.memory_percent ?? 0)}
+                animationDelay="0.5s"
+              />
+            </div>
+          </HoloCard>
+          <HoloCard>
+            <div className="absolute text-xs text-gray-400" style={{ top: '2rem', right: '2rem', textAlign: 'left', zIndex: 2 }}>
+              <div>{staticInfo && dynamicMetrics ? formatBytes(staticInfo.total_disk - dynamicMetrics.disk_used, 0) : '...'} 可用</div>
+            </div>
+            <div className="gauge-container">
+              <WaterBall 
+                percent={dynamicMetrics?.disk_percent ?? 0}
+                label="磁盘使用"
+              />
+            </div>
+          </HoloCard>
+          <HoloCard>
+            <div className="gauge-container">
+              <LoadAverage
+                load={dynamicMetrics?.load_average}
+                cpuCores={staticInfo?.cpu_logical_cores ?? 1}
+              />
+            </div>
+          </HoloCard>
+          <HoloCard className="network-card no-select">
+            <NetworkChart data={networkData} isMobile={isMobile} />
+          </HoloCard>
+          <HoloCard className="processes-card">
+            <ProcessList processes={dynamicMetrics?.processes ?? []} />
+          </HoloCard>
+        </div>
+      </div>
+    </>
+  );
+
+  const renderMobileView = () => (
+    <div className="mobile-main-container">
+      <HoloCard className="mobile-card">
+        <MobileDashboardStack 
+          cpuPercent={dynamicMetrics?.cpu_percent ?? 0}
+          memPercent={dynamicMetrics?.memory_percent ?? 0}
+          diskPercent={dynamicMetrics?.disk_percent ?? 0}
+          load1={dynamicMetrics?.load_average?.load1 ?? 0}
+          cpuCores={staticInfo?.cpu_logical_cores ?? 1}
+          getGaugeColor={getGaugeColor}
+        />
+      </HoloCard>
+      <HoloCard className="mobile-card network-mobile-card no-select">
+        <NetworkChart data={networkData} isMobile={isMobile} />
+      </HoloCard>
+      <HoloCard className="mobile-card">
+        <ProcessList processes={dynamicMetrics?.processes ?? []} />
+      </HoloCard>
+      <HoloCard className="mobile-card">
+        <MobileSystemInfoCard 
+          osVersion={staticInfo?.os_version ?? ''}
+          uptime={uptime}
+        />
+      </HoloCard>
+    </div>
+  );
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -1011,6 +1101,7 @@ function App() {
         .network-stats {
           display: flex;
           gap: 1rem;
+          flex-wrap: wrap; /* Allow wrapping on small screens */
         }
 
         .network-stat-item {
@@ -1415,6 +1506,101 @@ function App() {
           margin-right: 1rem;
         }
 
+        /* --- Mobile Styles --- */
+        .mobile-main-container {
+          padding: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .mobile-card {
+          border-radius: 16px;
+        }
+
+        .mobile-card .holo-card-content {
+          padding: 1rem;
+        }
+
+        .network-mobile-card .holo-card-content {
+          height: 250px; /* Give network card a fixed height on mobile */
+        }
+
+        .mobile-dashboard-stack {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+
+        .mobile-metric-item {
+          width: 100%;
+        }
+
+        .metric-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+          font-size: 0.875rem;
+          color: #d1d5db;
+        }
+
+        .metric-value {
+          font-size: 0.875rem;
+          font-weight: 600;
+        }
+
+        .metric-bar-background {
+          width: 100%;
+          height: 8px;
+          background-color: rgba(255, 255, 255, 0.1);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+
+        .metric-bar-foreground {
+          height: 100%;
+          border-radius: 4px;
+          transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .mobile-info-card-content {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .info-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          background: rgba(255, 255, 255, 0.05);
+          padding: 0.5rem 0.75rem;
+          border-radius: 8px;
+        }
+
+        .info-label {
+          font-size: 0.8rem;
+          color: #9ca3af;
+        }
+
+        .info-value {
+          font-size: 0.8rem;
+          font-weight: 500;
+          color: #e5e7eb;
+        }
+
+        .flex-grow {
+          flex-grow: 1;
+        }
+
+        .flex-shrink-0 {
+          flex-shrink: 0;
+        }
+
         @media (max-width: 1200px) {
           .metrics-grid {
             grid-template-columns: repeat(2, 1fr);
@@ -1426,15 +1612,7 @@ function App() {
 
         @media (max-width: 768px) {
           .system-header {
-            flex-direction: column;
-            gap: 1rem;
-            text-align: center;
-            align-items: center;
-            padding: 1.5rem;
-          }
-          .system-details {
-            justify-content: center;
-            max-width: 100%;
+            display: none; /* Hide desktop header on mobile */
           }
           .metrics-grid {
             grid-template-columns: 1fr;
@@ -1444,76 +1622,24 @@ function App() {
             grid-column: span 1;
           }
           .pt-32 {
-            padding-top: 12rem;
+            padding-top: 1rem; /* Adjust for no header */
+          }
+          .px-8 {
+            padding-left: 1rem;
+            padding-right: 1rem;
+          }
+          .chart-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
           }
         }
       `}</style>
 
       <AnimatedBackground />
       
-      <SystemInfoHeader info={staticInfo} />
+      {isMobile ? renderMobileView() : renderDesktopView()}
 
-      <div className="pt-32 pb-8 px-8 relative z-10">
-        <div className="metrics-grid">
-          {/* CPU Usage */}
-          <HoloCard>
-            <div className="gauge-container">
-              <GlowingGauge
-                percent={dynamicMetrics?.cpu_percent ?? 0}
-                label="CPU 使用率"
-                color={getGaugeColor(dynamicMetrics?.cpu_percent ?? 0)}
-                animationDelay="0s"
-              />
-            </div>
-          </HoloCard>
-
-          {/* Memory Usage */}
-          <HoloCard>
-            <div className="gauge-container">
-              <GlowingGauge
-                percent={dynamicMetrics?.memory_percent ?? 0}
-                label="内存使用率"
-                color={getGaugeColor(dynamicMetrics?.memory_percent ?? 0)}
-                animationDelay="0.5s"
-              />
-            </div>
-          </HoloCard>
-
-          {/* Disk Usage */}
-          <HoloCard>
-            <div className="absolute text-xs text-gray-400" style={{ top: '2rem', right: '2rem', textAlign: 'left', zIndex: 2 }}>
-              {/* <div>已用: {formatBytes(dynamicMetrics?.disk_used ?? 0, 0)}</div> */}
-              <div>{staticInfo && dynamicMetrics ? formatBytes(staticInfo.total_disk - dynamicMetrics.disk_used, 0) : '...'} 可用</div>
-            </div>
-            <div className="gauge-container">
-              <WaterBall 
-                percent={dynamicMetrics?.disk_percent ?? 0}
-                label="磁盘使用"
-              />
-            </div>
-          </HoloCard>
-
-          {/* load average */}
-          <HoloCard>
-            <div className="gauge-container">
-              <LoadAverage
-                load={dynamicMetrics?.load_average}
-                cpuCores={staticInfo?.cpu_logical_cores ?? 1}
-              />
-            </div>
-          </HoloCard>
-
-          {/* Network Activity */}
-          <HoloCard className="network-card no-select">
-            <NetworkChart data={networkData} />
-          </HoloCard>
-
-          {/* Process List */}
-          <HoloCard className="processes-card">
-            <ProcessList processes={dynamicMetrics?.processes ?? []} />
-          </HoloCard>
-        </div>
-      </div>
     </div>
   );
 }
