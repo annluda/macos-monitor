@@ -262,7 +262,152 @@ const WaterBall: React.FC<{ percent: number; label: string }> = ({ percent, labe
   );
 };
 
-// --- Load Average Component ---
+// --- Dial Gauge Component ---
+const DialGauge: React.FC<{ 
+  percent: number; 
+  label: string; 
+  color: string; 
+  size?: 'large' | 'small';
+  animationDelay?: string;
+}> = ({ percent, label, color, size = 'large', animationDelay }) => {
+  const radius = size === 'large' ? 45 : 30;
+  const strokeWidth = size === 'large' ? 8 : 6;
+  const svgSize = size === 'large' ? 120 : 80;
+  const centerPos = svgSize / 2;
+  
+  // 仪表盘从-135度到135度，总共270度
+  const startAngle = -135;
+  const endAngle = 135;
+  const totalAngle = endAngle - startAngle;
+  const currentAngle = startAngle + (percent / 100) * totalAngle;
+  
+  // 计算弧形路径
+  const arcPath = (startA: number, endA: number, r: number) => {
+    const start = polarToCartesian(centerPos, centerPos, r, endA);
+    const end = polarToCartesian(centerPos, centerPos, r, startA);
+    const largeArcFlag = endA - startA <= 180 ? "0" : "1";
+    return [
+      "M", start.x, start.y,
+      "A", r, r, 0, largeArcFlag, 0, end.x, end.y
+    ].join(" ");
+  };
+  
+  const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+    const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+    return {
+      x: centerX + (radius * Math.cos(angleInRadians)),
+      y: centerY + (radius * Math.sin(angleInRadians))
+    };
+  };
+  
+  // 计算指针位置
+  const needleEnd = polarToCartesian(centerPos, centerPos, radius - 10, currentAngle);
+  
+  return (
+    <div className="relative w-full h-full flex flex-col items-center justify-center">
+      <div className="relative">
+        <svg width={svgSize} height={svgSize}>
+          <defs>
+            <filter id={`glow-${size}`}>
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            <linearGradient id={`dialGradient-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={color} stopOpacity="0.8"/>
+              <stop offset="100%" stopColor={color} stopOpacity="0.4"/>
+            </linearGradient>
+          </defs>
+          
+          {/* Background arc */}
+          <path
+            d={arcPath(startAngle, endAngle, radius)}
+            stroke="rgba(255,255,255,0.1)"
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeLinecap="round"
+          />
+          
+          {/* Progress arc */}
+          <path
+            d={arcPath(startAngle, currentAngle, radius)}
+            stroke={`url(#dialGradient-${size})`}
+            strokeWidth={strokeWidth}
+            fill="none"
+            strokeLinecap="round"
+            filter={`url(#glow-${size})`}
+            className="dial-progress"
+            style={{
+              transition: 'd 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+          />
+          
+          {/* Center dot */}
+          <circle
+            cx={centerPos}
+            cy={centerPos}
+            r="4"
+            fill={color}
+            filter={`url(#glow-${size})`}
+          />
+          
+          {/* Needle */}
+          <line
+            x1={centerPos}
+            y1={centerPos}
+            x2={needleEnd.x}
+            y2={needleEnd.y}
+            stroke={color}
+            strokeWidth="3"
+            strokeLinecap="round"
+            filter={`url(#glow-${size})`}
+            className="dial-needle"
+            style={{
+              transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+              animationDelay
+            }}
+          />
+          
+          {/* Tick marks */}
+          {[0, 25, 50, 75, 100].map(tick => {
+            const tickAngle = startAngle + (tick / 100) * totalAngle;
+            const tickStart = polarToCartesian(centerPos, centerPos, radius + 5, tickAngle);
+            const tickEnd = polarToCartesian(centerPos, centerPos, radius - 5, tickAngle);
+            return (
+              <line
+                key={tick}
+                x1={tickStart.x}
+                y1={tickStart.y}
+                x2={tickEnd.x}
+                y2={tickEnd.y}
+                stroke="rgba(255,255,255,0.3)"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            );
+          })}
+        </svg>
+        
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none" 
+             style={{ marginTop: size === 'large' ? '10px' : '5px' }}>
+          <span 
+            className={`font-bold ${size === 'large' ? 'text-xl' : 'text-sm'}`} 
+            style={{ color }}
+          >
+            {percent.toFixed(1)}%
+          </span>
+          <span className={`text-gray-400 mt-1 ${size === 'large' ? 'text-xs' : 'text-[10px]'}`}>
+            {label}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Load Average Component with Dial Gauges ---
 const LoadAverage: React.FC<{
   load: { load1: number; load5: number; load15: number } | undefined;
   cpuCores: number;
@@ -273,24 +418,25 @@ const LoadAverage: React.FC<{
 
   const getLoadColor = (load: number, cores: number) => {
     const ratio = load / cores;
-    if (ratio < 0.5) return '#10b981'; // Cyan
+    if (ratio < 0.5) return '#10b981'; // Green
     if (ratio < 1) return '#f59e0b'; // Amber
     return '#ef4444'; // Red
   };
 
   const calculatePercent = (load: number, cores: number) => {
-    return (load / cores) * 100;
+    return Math.min((load / cores) * 100, 100); // Cap at 100%
   };
 
   return (
     <div className="w-full flex flex-col items-center justify-center">
-      <div className="flex items-center justify-between w-full">
+      <div className="flex items-center justify-between">
         {/* 1 minute gauge - left side, centered */}
         <div className="flex-1 flex justify-center">
-          <GlowingGauge
+          <DialGauge
             percent={calculatePercent(load.load1, cpuCores)}
-            label="系统负载" // 1 min
+            label="系统负载"
             color={getLoadColor(load.load1, cpuCores)}
+            size="large"
             animationDelay="0s"
           />
         </div>
@@ -298,7 +444,7 @@ const LoadAverage: React.FC<{
         {/* 5min and 15min gauges - right side, stacked */}
         <div className="flex flex-col gap-2">
           <div style={{ zoom: 0.5 }}>
-            <GlowingGauge
+            <DialGauge
               percent={calculatePercent(load.load5, cpuCores)}
               label="5 min"
               color={getLoadColor(load.load5, cpuCores)}
@@ -306,11 +452,11 @@ const LoadAverage: React.FC<{
             />
           </div>
           <div style={{ zoom: 0.5 }}>
-            <GlowingGauge
+            <DialGauge
               percent={calculatePercent(load.load15, cpuCores)}
               label="15 min"
               color={getLoadColor(load.load15, cpuCores)}
-              animationDelay="0.6s"
+              animationDelay="0.1s"
             />
           </div>
         </div>
@@ -1056,6 +1202,52 @@ function App() {
 
         .mt-4 {
         margin-top: 1rem;
+        }
+
+        .dial-progress {
+          filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        .dial-needle {
+          filter: drop-shadow(0 0 4px currentColor);
+        }
+
+
+        .text-xl {
+          font-size: 1.25rem; /* 20px */
+          line-height: 1.75rem; /* 28px */
+        }
+
+
+        .text-gray-600 {
+            color: #4b5563;
+        }
+
+        
+        .w-full {
+          width: 100%;
+        }
+
+        .space-y-2 > * + * {
+          margin-top: 0.5rem;
+        }
+
+        .text-lg {
+          font-size: 1.125rem; /* 18px */
+          line-height: 1.75rem; /* 28px */
+        }
+
+        .font-semibold {
+          font-weight: 600;
+        }
+
+        .mb-4 {
+          margin-bottom: 1rem;
+        }
+
+        .py-8 {
+          padding-top: 2rem;
+          padding-bottom: 2rem;
         }
 
         .text-center {
