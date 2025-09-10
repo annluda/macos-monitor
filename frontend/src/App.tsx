@@ -782,8 +782,9 @@ function App() {
       </HoloCard>
       <HoloCard className="mobile-card">
         <MobileSystemInfoCard 
-          osVersion={staticInfo?.os_version ?? ''}
+          osVersion={staticInfo?.os_version ?? '--'}
           uptime={uptime}
+          localIP={staticInfo?.local_ip ?? '--'}
         />
       </HoloCard>
     </div>

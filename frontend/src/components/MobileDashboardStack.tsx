@@ -60,7 +60,7 @@ const MobileDashboardStack: React.FC<MobileDashboardStackProps> = (
         color={getGaugeColor(diskPercent)}
       />
       <MetricItem
-        label="负载 (1m)"
+        label="负载"
         percent={loadPercent}
         valueText={load1.toFixed(2)}
         color={getGaugeColor(loadPercent)} // Or a different color logic for load
