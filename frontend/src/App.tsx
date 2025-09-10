@@ -1480,8 +1480,8 @@ function App() {
           {/* Disk Usage */}
           <HoloCard>
             <div className="absolute text-xs text-gray-400" style={{ top: '2rem', right: '2rem', textAlign: 'left', zIndex: 2 }}>
-              <div>已用: {formatBytes(dynamicMetrics?.disk_used ?? 0, 0)}</div>
-              <div>剩余: {staticInfo && dynamicMetrics ? formatBytes(staticInfo.total_disk - dynamicMetrics.disk_used, 0) : '...'}</div>
+              {/* <div>已用: {formatBytes(dynamicMetrics?.disk_used ?? 0, 0)}</div> */}
+              <div>{staticInfo && dynamicMetrics ? formatBytes(staticInfo.total_disk - dynamicMetrics.disk_used, 0) : '...'} 可用</div>
             </div>
             <div className="gauge-container">
               <WaterBall 
