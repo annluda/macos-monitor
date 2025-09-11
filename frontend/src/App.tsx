@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useResponsive } from './hooks/useResponsive';
 import MobileDashboardStack from './components/MobileDashboardStack';
 import MobileSystemInfoCard from './components/MobileSystemInfoCard';
