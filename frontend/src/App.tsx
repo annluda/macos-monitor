@@ -14,7 +14,7 @@ import NetworkChart from './components/NetworkChart';
 import SystemInfoHeader from './components/SystemInfoHeader';
 import './App.css';
 
-const API_BASE_URL = '172.20.10.2:8000';
+const API_BASE_URL = 'localhost:8000';
 
 function App() {
   const { isMobile } = useResponsive();
