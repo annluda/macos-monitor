@@ -14,7 +14,9 @@ import NetworkChart from './components/NetworkChart';
 import SystemInfoHeader from './components/SystemInfoHeader';
 import './App.css';
 
-const API_BASE_URL = 'localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_BACKEND_BASE; 
+const WS_BASE_URL = import.meta.env.VITE_WS_BASE; 
+
 
 function App() {
   const { isMobile } = useResponsive();
@@ -63,7 +65,7 @@ function App() {
 
   // WebSocket for real-time network data
   useEffect(() => {
-    const ws = new WebSocket(`ws://${API_BASE_URL}/ws/network`);
+    const ws = new WebSocket(`ws://${WS_BASE_URL}/ws/network`);
     ws.onmessage = (event) => {
       const netData = JSON.parse(event.data);
       const now = Date.now();
@@ -130,7 +132,7 @@ function App() {
           </HoloCard>
           <HoloCard>
             <div className="absolute text-xs text-gray-400" style={{ top: '2rem', right: '2rem', textAlign: 'left', zIndex: 2 }}>
-              <div>{staticInfo && dynamicMetrics ? formatBytes(staticInfo.total_disk - dynamicMetrics.disk_used, 0) : '...'} 可用</div>
+              <div>{staticInfo && dynamicMetrics ? formatBytes(staticInfo.total_disk - dynamicMetrics.disk_used, 1) : '...'} 可用</div>
             </div>
             <div className="gauge-container">
               <WaterBall 
