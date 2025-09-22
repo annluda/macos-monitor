@@ -34,7 +34,7 @@ function App() {
 
   // Fetch static system info & calculate uptime
   useEffect(() => {
-    fetch(`http://${API_BASE_URL}/api/system/static`)
+    fetch(`${API_BASE_URL}/api/system/static`)
       .then(res => res.json())
       .then(data => {
         setStaticInfo(data);
@@ -55,7 +55,7 @@ function App() {
   // Fetch dynamic metrics every 2 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      fetch(`http://${API_BASE_URL}/api/system/dynamic`)
+      fetch(`${API_BASE_URL}/api/system/dynamic`)
         .then(res => res.json())
         .then(setDynamicMetrics)
         .catch(console.error);
