@@ -67,27 +67,27 @@ const App = () => {
 
   const CircularMeter = ({ value, label, size = 'small' }) => {
 
-    const radius = size === 'large' ? 110 : 75;
+    const radius = size === 'large' ? 55 : 40;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (value / 100) * circumference;
-    const centerSize = size === 'large' ? 280 : 190;
+    const centerSize = size === 'large' ? 140 : 100;
 
     return (
-      <div className={`relative ${size === 'large' ? 'w-[280px] h-[280px]' : 'w-[190px] h-[190px]'}`}>
+      <div className={`relative ${size === 'large' ? 'w-[140px] h-[140px]' : 'w-[100px] h-[100px]'}`}>
         <svg className="transform -rotate-90" width={centerSize} height={centerSize}>
           {/* 多层装饰圆环 */}
-          <circle cx={centerSize/2} cy={centerSize/2} r={radius + 35} stroke="rgba(255,255,255,0.1)" strokeWidth="1" fill="none" />
-          <circle cx={centerSize/2} cy={centerSize/2} r={radius + 30} stroke="rgba(255,255,255,0.15)" strokeWidth="2" fill="none" />
-          <circle cx={centerSize/2} cy={centerSize/2} r={radius + 20} stroke="rgba(255,255,255,0.08)" strokeWidth="1" fill="none" strokeDasharray="8 8" />
+          <circle cx={centerSize/2} cy={centerSize/2} r={radius + 17} stroke="rgba(255,255,255,0.1)" strokeWidth="1" fill="none" />
+          <circle cx={centerSize/2} cy={centerSize/2} r={radius + 15} stroke="rgba(255,255,255,0.15)" strokeWidth="2" fill="none" />
+          <circle cx={centerSize/2} cy={centerSize/2} r={radius + 10} stroke="rgba(255,255,255,0.08)" strokeWidth="1" fill="none" strokeDasharray="8 8" />
           
           {/* 背景圆环 */}
-          <circle cx={centerSize/2} cy={centerSize/2} r={radius} stroke="rgba(255,255,255,0.1)" strokeWidth="12" fill="none" />
+          <circle cx={centerSize/2} cy={centerSize/2} r={radius} stroke="rgba(255,255,255,0.1)" strokeWidth="8" fill="none" />
           
           {/* 进度圆环 */}
           <circle
             cx={centerSize/2} cy={centerSize/2} r={radius}
             stroke="rgba(255,255,255,0.6)"
-            strokeWidth="12"
+            strokeWidth="8"
             fill="none"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
@@ -96,13 +96,13 @@ const App = () => {
           />
           
           {/* 刻度标记 */}
-          {[...Array(size === 'large' ? 24 : 16)].map((_, i) => {
-            const angle = (i / (size === 'large' ? 24 : 16)) * 360;
+          {[...Array(size === 'large' ? 12 : 8)].map((_, i) => {
+            const angle = (i / (size === 'large' ? 12 : 8)) * 360;
             const rad = (angle * Math.PI) / 180;
-            const x1 = centerSize/2 + (radius + 15) * Math.cos(rad);
-            const y1 = centerSize/2 + (radius + 15) * Math.sin(rad);
-            const x2 = centerSize/2 + (radius + 20) * Math.cos(rad);
-            const y2 = centerSize/2 + (radius + 20) * Math.sin(rad);
+            const x1 = centerSize/2 + (radius + 8) * Math.cos(rad);
+            const y1 = centerSize/2 + (radius + 8) * Math.sin(rad);
+            const x2 = centerSize/2 + (radius + 10) * Math.cos(rad);
+            const y2 = centerSize/2 + (radius + 10) * Math.sin(rad);
             return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.2)" strokeWidth="2" />;
           })}
           
@@ -115,13 +115,13 @@ const App = () => {
         </svg>
         
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className={`${size === 'large' ? 'text-7xl' : 'text-5xl'} font-bold text-white tracking-tight`}>
+          <div className={`${size === 'large' ? 'text-4xl' : 'text-2xl'} font-bold text-white tracking-tight`}>
             {Math.round(value)}%
           </div>
         </div>
         
-        <div className="absolute bottom-10 left-0 right-0 text-center">
-          <div className="text-gray-300 text-xs uppercase tracking-widest font-semibold">{label}</div>
+        <div className={`absolute ${size === 'large' ? 'bottom-8' : 'bottom-5'} left-0 right-0 text-center`}>
+          <div className="font-bold text-white/30 text-xs uppercase tracking-widest font-semibold">{label}</div>
         </div>
       </div>
     );
@@ -131,6 +131,12 @@ const App = () => {
     <div className={`relative backdrop-blur-md bg-white/5 rounded-lg ${className}`}
          style={{ boxShadow: '0 0 30px rgba(255, 255, 255, 0.1), inset 0 0 30px rgba(255, 255, 255, 0.03)' }}>
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:20px_20px] rounded-lg pointer-events-none" />
+      {children}
+    </div>
+  );
+
+  const GlassPanelNoBG = ({ children, className = '' }) => (
+    <div className={`relative bg-white/0 ${className}`}>
       {children}
     </div>
   );
@@ -182,40 +188,38 @@ const App = () => {
           <div className="col-span-6 space-y-4">
             {/* Core Meters Row */}
             <div className="grid grid-cols-2 gap-4">
-              <GlassPanel className="p-6 flex justify-center items-center">
-                <CircularMeter value={memoryUsage} label="Memory"/>
-              </GlassPanel>
-              <GlassPanel className="p-6 flex justify-center items-center">
+              <GlassPanelNoBG className="p-6 flex justify-center items-center">
+                <CircularMeter value={memoryUsage} label="内存"/>
+              </GlassPanelNoBG>
+              <GlassPanelNoBG className="p-6 flex justify-center items-center">
                 <CircularMeter value={cpuUsage} label="CPU"/>
-              </GlassPanel>
+              </GlassPanelNoBG>
             </div>
 
             {/* Main Storage */}
-            <GlassPanel className="p-6 flex justify-center items-center">
-              <CircularMeter value={storageUsage} label="Storage" icon={HardDrive} size= 'large' />
-            </GlassPanel>
+            <GlassPanelNoBG className="p-6 flex justify-center items-center">
+              <CircularMeter value={storageUsage} label="硬盘" size= 'large' />
+            </GlassPanelNoBG>
 
             {/* Network Activity */}
-            <GlassPanel className="p-4">
+            <GlassPanelNoBG className="p-4">
               <div className="grid grid-cols-2 gap-4 mb-3">
                 <div className="flex items-center gap-3">
-                  <Upload className="w-5 h-5 text-white/60" />
                   <div>
                     <div className="text-xs text-white/40 uppercase">Upload</div>
-                    <div className="text-lg font-bold text-white/80">{uploadSpeed.toFixed(1)} MB/s</div>
+                    <div className="text-lg font-bold text-white/60">{uploadSpeed.toFixed(1)} MB/s</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Download className="w-5 h-5 text-white/60" />
                   <div>
                     <div className="text-xs text-white/40 uppercase">Download</div>
-                    <div className="text-lg font-bold text-white/80">{downloadSpeed.toFixed(1)} MB/s</div>
+                    <div className="text-lg font-bold text-white/60">{downloadSpeed.toFixed(1)} MB/s</div>
                   </div>
                 </div>
               </div>
               
               {/* Wave Scan */}
-              <div className="h-24 relative bg-white/5 rounded overflow-hidden">
+              <div className="h-24 relative bg-white/0 rounded overflow-hidden">
                 <svg className="w-full h-full">
                   <defs>
                     <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -257,26 +261,7 @@ const App = () => {
                   }}
                 />
               </div>
-            </GlassPanel>
-
-            {/* System Status */}
-            <GlassPanel className="p-4">
-              <div className="text-xs text-white/60 uppercase tracking-wider mb-3">System Status</div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="p-2 bg-white/5 rounded">
-                  <div className="text-xl font-bold text-white/80">OPTIMAL</div>
-                  <div className="text-xs text-white/40">Navigation</div>
-                </div>
-                <div className="p-2 bg-white/5 rounded">
-                  <div className="text-xl font-bold text-white/80">ACTIVE</div>
-                  <div className="text-xs text-white/40">Shields</div>
-                </div>
-                <div className="p-2 bg-white/5 rounded">
-                  <div className="text-xl font-bold text-white/80">STABLE</div>
-                  <div className="text-xs text-white/40">Life Support</div>
-                </div>
-              </div>
-            </GlassPanel>
+            </GlassPanelNoBG>
           </div>
 
           {/* Right Panel - Top Processes */}
@@ -287,26 +272,15 @@ const App = () => {
             <div className="space-y-3">
               {topProcesses.map((proc, idx) => (
                 <div key={idx} className="p-3 bg-white/5 rounded">
-                  <div className="text-sm text-white/80 mb-2 font-semibold">{proc.name}</div>
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-white/40">CPU</span>
-                      <span className="text-white/70">{proc.cpu}%</span>
+                      <span className="text-white/40">{proc.name}</span>
+                      <span className="text-white/70">{proc.cpu}% {proc.mem}</span>
                     </div>
-                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-1 bg-white/10 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-white/40 to-white/60"
+                        className="h-full bg-gradient-to-r from-white/10 to-white/40 rounded-full"
                         style={{ width: `${proc.cpu}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-white/40">MEM</span>
-                      <span className="text-white/70">{proc.mem}%</span>
-                    </div>
-                    <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-white/40 to-white/60"
-                        style={{ width: `${proc.mem}%` }}
                       />
                     </div>
                   </div>
