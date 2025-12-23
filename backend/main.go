@@ -75,7 +75,6 @@ type dynamicSystemInfo struct {
 	MemoryUsed    uint64      `json:"memory_used"`
 	DiskPercent   float64     `json:"disk_percent"`
 	DiskUsed      uint64      `json:"disk_used"`
-	LoadAverage   *load.AvgStat `json:"load_average"`
 	Processes     []procInfo  `json:"processes"`
 }
 
