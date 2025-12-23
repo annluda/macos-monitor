@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	wifiInterface        = "en0"
+	wifiInterface        = "en1"
 	sampleInterval       = 1 * time.Second
 	persistenceInterval  = 1 * time.Minute
 	maxSleepInterval     = 10 * time.Second
@@ -29,12 +29,13 @@ type IOStats struct {
 // Monitor handles all network monitoring, calculation, and aggregation.
 type Monitor struct {
 	db             *DBManager
-	realtimeRate   RealtimeRate
-	hourlyStats    HourlyStats
-	sinceBootStats SinceBootTraffic
-	
+	realtimeRate      RealtimeRate
+	hourlyStats       HourlyStats
+	trafficSinceStart SinceBootTraffic
+
 	// Internal state
 	mu                 sync.RWMutex
+	initialSample      IOStats
 	lastSample         IOStats
 	downRateMA         *movingAverage
 	upRateMA           *movingAverage
@@ -70,8 +71,9 @@ func NewMonitor() (*Monitor, error) {
 		// Let it start anyway, the loop will handle recovery
 	}
 	m.lastSample = initialStats
-	m.sinceBootStats.DownBytes = initialStats.BytesRecv
-	m.sinceBootStats.UpBytes = initialStats.BytesSent
+	m.initialSample = initialStats
+	m.trafficSinceStart.DownBytes = 0
+	m.trafficSinceStart.UpBytes = 0
 
 
 	return m, nil
@@ -117,7 +119,7 @@ func (m *Monitor) GetStats() (Stats, error) {
 
 	return Stats{
 		Daily7d:   daily7d,
-		SinceBoot: m.sinceBootStats,
+		SinceBoot: m.trafficSinceStart,
 	}, nil
 }
 
@@ -160,9 +162,9 @@ func (m *Monitor) performSample() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Update total since boot stats
-	m.sinceBootStats.UpBytes = currentStats.BytesSent
-	m.sinceBootStats.DownBytes = currentStats.BytesRecv
+	// Update total since start stats
+	m.trafficSinceStart.UpBytes = currentStats.BytesSent - m.initialSample.BytesSent
+	m.trafficSinceStart.DownBytes = currentStats.BytesRecv - m.initialSample.BytesRecv
 	
 	// Check for sleep/wake or initial sample
 	deltaT := currentStats.Time.Sub(m.lastSample.Time).Seconds()
@@ -175,9 +177,16 @@ func (m *Monitor) performSample() {
 		return
 	}
 
-	// Calculate raw BPS
-	downBPS := float64(currentStats.BytesRecv-m.lastSample.BytesRecv) / deltaT
-	upBPS := float64(currentStats.BytesSent-m.lastSample.BytesSent) / deltaT
+	// Calculate raw BPS, checking for counter resets
+	var downBPS, upBPS float64
+	if currentStats.BytesRecv >= m.lastSample.BytesRecv {
+		downBPS = float64(currentStats.BytesRecv-m.lastSample.BytesRecv) / deltaT
+	}
+	if currentStats.BytesSent >= m.lastSample.BytesSent {
+		upBPS = float64(currentStats.BytesSent-m.lastSample.BytesSent) / deltaT
+	}
+
+	fmt.Printf("Sampled: DownBPS=%.2f, UpBPS=%.2f over %.2fs\n", downBPS, upBPS, deltaT)
 
 	// Update moving average
 	smoothDownBPS := m.downRateMA.add(downBPS)
@@ -302,11 +311,11 @@ func newRingBuffer(size int) *ringBuffer {
 
 func (rb *ringBuffer) advance() {
 	now := time.Now()
-	// Check if the 5-minute window has passed
-	if now.Sub(rb.lastUpdate) > hourlyInterval {
+	// Loop to catch up for multiple missed intervals (e.g. after sleep)
+	for now.Sub(rb.lastUpdate) > hourlyInterval {
 		rb.cursor = (rb.cursor + 1) % rb.size
 		rb.buckets[rb.cursor] = hourlyBucket{} // Reset the new bucket
-		rb.lastUpdate = now
+		rb.lastUpdate = rb.lastUpdate.Add(hourlyInterval)
 	}
 }
 
