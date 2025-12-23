@@ -4,6 +4,7 @@ go 1.24.3
 
 require (
 	github.com/gorilla/websocket v1.5.1
+	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/shirou/gopsutil/v3 v3.24.3
 )
 

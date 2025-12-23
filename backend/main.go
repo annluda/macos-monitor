@@ -11,23 +11,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
-	"github.com/shirou/gopsutil/v3/load"
-	psutil_net "github.com/shirou/gopsutil/v3/net"
 	"github.com/shirou/gopsutil/v3/process"
+	"macos-monitor/backend-go/network"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all connections
-	},
-}
-
 func main() {
+	// Initialize the network monitor
+	netMonitor, err := network.NewMonitor()
+	if err != nil {
+		log.Fatalf("Failed to initialize network monitor: %v", err)
+	}
+	netMonitor.Start()
+	defer netMonitor.Close()
+
 	// Setup CORS
 	corsHandler := func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +44,14 @@ func main() {
 
 	http.HandleFunc("/api/system/static", staticSystemInfoHandler)
 	http.HandleFunc("/api/system/dynamic", dynamicSystemInfoHandler)
-	http.HandleFunc("/ws/network", networkWebsocketHandler)
+
+	// New network handlers
+	http.HandleFunc("/api/network/daily", networkDailyHandler(netMonitor))
+	http.HandleFunc("/api/network/hourly", networkHourlyHandler(netMonitor))
+	http.HandleFunc("/ws/network/realtime", func(w http.ResponseWriter, r *http.Request) {
+		network.ServeWs(netMonitor.Hub(), w, r)
+	})
+
 
 	fmt.Println("Server starting on :8000")
 	log.Fatal(http.ListenAndServe(":8000", corsHandler(http.DefaultServeMux)))
@@ -77,11 +84,6 @@ type procInfo struct {
 	Name       string  `json:"name"`
 	CPUPercent float64 `json:"cpu_percent"`
 	MemoryRss  uint64  `json:"memory_rss"`
-}
-
-type networkInfo struct {
-	BytesSent uint64 `json:"bytes_sent"`
-	BytesRecv uint64 `json:"bytes_recv"`
 }
 
 func getMacOSVersion() string {
@@ -140,12 +142,11 @@ func dynamicSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 	cpuPercent, err := cpu.Percent(0, false)
 	if err != nil || len(cpuPercent) == 0 {
 		log.Printf("Could not fetch CPU percentage: %v", err)
-		// Handle error appropriately, maybe return a JSON error response
+		http.Error(w, "Could not fetch CPU percentage", http.StatusInternalServerError)
 		return
 	}
 	memInfo, _ := mem.VirtualMemory()
 	diskInfo, _ := disk.Usage("/")
-	loadAvg, _ := load.Avg()
 
 	procs, _ := process.Processes()
 	processes := make([]procInfo, 0)
@@ -185,32 +186,29 @@ func dynamicSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 		MemoryUsed:    memInfo.Used,
 		DiskPercent:   diskInfo.UsedPercent,
 		DiskUsed:      diskInfo.Used,
-		LoadAverage:   loadAvg,
 		Processes:     topProcesses,
 	}
 
 	json.NewEncoder(w).Encode(info)
 }
 
-func networkWebsocketHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	defer conn.Close()
-
-	for {
-		netIO, _ := psutil_net.IOCounters(false)
-		info := networkInfo{
-			BytesSent: netIO[0].BytesSent,
-			BytesRecv: netIO[0].BytesRecv,
-		}
-		err := conn.WriteJSON(info)
+func networkDailyHandler(m *network.Monitor) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		stats, err := m.GetStats()
 		if err != nil {
-			log.Println("Client disconnected from network socket")
-			break
+			http.Error(w, "Could not retrieve network stats", http.StatusInternalServerError)
+			log.Printf("Error getting network stats: %v", err)
+			return
 		}
-		time.Sleep(1 * time.Second)
+		json.NewEncoder(w).Encode(stats)
+	}
+}
+
+func networkHourlyHandler(m *network.Monitor) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		stats := m.GetHourlyStats()
+		json.NewEncoder(w).Encode(stats)
 	}
 }
