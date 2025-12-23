@@ -43,3 +43,7 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+*.db
+*.sqlite
+*.sqlite3
