@@ -69,8 +69,8 @@ const App = () => {
           // Map daily_7d to weekData
           const newWeekData = data.daily_7d.map(daily => ({
             day: new Date(daily.date).toLocaleDateString('en-US', { weekday: 'short' }), // e.g., "Mon"
-            upload: Math.round(daily.up_bytes / (1024 * 1024)), // Convert to MB
-            download: Math.round(daily.down_bytes / (1024 * 1024)) // Convert to MB
+            upload: Math.round(daily.up_bytes / (1024 * 1024 * 1024)), // Convert to GB
+            download: Math.round(daily.down_bytes / (1024 * 1024* 1024)) // Convert to GB
           })).reverse(); // Reverse to have Mon as first and Sun as last if needed, or based on API order.
           // The API returns most recent first, so reverse to have oldest first for chart.
           setWeekData(newWeekData);
@@ -188,17 +188,11 @@ const App = () => {
             const y2 = centerSize/2 + (radius + 10) * Math.sin(rad);
             return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.2)" strokeWidth="2" />;
           })}
-          
-          <defs>
-            <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#60a5fa" />
-              <stop offset="100%" stopColor="#3b82f6" />
-            </linearGradient>
-          </defs>
+             
         </svg>
         
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className={`${size === 'large' ? 'text-4xl' : 'text-2xl'} font-bold text-white tracking-tight`}>
+          <div className={`${size === 'large' ? 'text-4xl' : 'text-2xl'} font-bold text-white/60 tracking-tight`}>
             {Math.round(value)}%
           </div>
         </div>
@@ -257,9 +251,12 @@ const GlassPanel = ({ children, className = '' }) => (
         <div className="grid grid-cols-12 gap-4">
           {/* Left Panel - 7 Day Traffic */}
           <GlassPanel className="col-span-3 p-4">
-            <div>
+            <div className="pt-20">
               <div className="text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Upload size={14} /> 7-Day Upload
+                Daily Traffic
+              </div>
+              <div className="text-xs text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
+                Upload(GB)
               </div>
               <div className="flex justify-between items-end h-28 px-1">
                 {weekData.map((item, idx) => {
@@ -267,11 +264,15 @@ const GlassPanel = ({ children, className = '' }) => (
                   const height = (item.upload / maxUpload) * 100;
                   return (
                     <div key={idx} className="flex flex-col items-center w-6 text-center">
-                      <div className="text-white/70 text-[10px]">{item.upload}</div>
-                      <div className="w-3 h-20 bg-white/10 rounded-full flex items-end mt-1">
+                      {item.upload !== 0 && (
+                        <div className="text-white/60 text-[10px]">
+                          {item.upload}
+                        </div>
+                      )}
+                      <div className="w-2 h-20 rounded-full flex items-end mt-1">
                         <div 
-                          className="w-full bg-gradient-to-b from-sky-400 to-sky-600 rounded-full transition-all duration-500"
-                          style={{ height: `${height}%`, boxShadow: '0 0 8px rgba(56, 189, 248, 0.4)' }}
+                          className="w-full bg-gradient-to-b from-sky-800 to-sky-950 rounded-full transition-all duration-500"
+                          style={{ height: `${height}%` }}
                         />
                       </div>
                       <div className="text-white/50 text-xs mt-1">{item.day}</div>
@@ -281,8 +282,8 @@ const GlassPanel = ({ children, className = '' }) => (
               </div>
             </div>
             <div className="mt-8">
-              <div className="text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Download size={14} /> 7-Day Download
+              <div className="text-xs text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
+                Download(GB)
               </div>
               <div className="flex justify-between items-end h-28 px-1">
                 {weekData.map((item, idx) => {
@@ -290,11 +291,13 @@ const GlassPanel = ({ children, className = '' }) => (
                   const height = (item.download / maxDownload) * 100;
                   return (
                     <div key={idx} className="flex flex-col items-center w-6 text-center">
-                      <div className="text-white/70 text-[10px]">{item.download}</div>
-                      <div className="w-3 h-20 bg-white/10 rounded-full flex items-end mt-1">
+                      {item.upload !== 0 && (
+                        <div className="text-white/60 text-[10px]">{item.download}</div>
+                      )}
+                      <div className="w-2 h-20 rounded-full flex items-end mt-1">
                         <div 
-                          className="w-full bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full transition-all duration-500"
-                          style={{ height: `${height}%`, boxShadow: '0 0 8px rgba(52, 211, 153, 0.4)' }}
+                          className="w-full bg-gradient-to-b from-emerald-800 to-emerald-950 rounded-full transition-all duration-500"
+                          style={{ height: `${height}%` }}
                         />
                       </div>
                       <div className="text-white/50 text-xs mt-1">{item.day}</div>
@@ -303,6 +306,23 @@ const GlassPanel = ({ children, className = '' }) => (
                 })}
               </div>
             </div>
+
+            <div className="mt-8">
+              <div className="text-xs text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
+                Since boot
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-center">
+                <div className="p-1 bg-white/0 rounded">
+                  <div className="text-xs font-bold text-white/10 uppercase">Upload</div>
+                  <div className="text-xs text-white/20"> todo </div>
+                </div>
+                <div className="p-1 rounded">
+                  <div className="text-xs font-bold text-white/10 uppercase">Download</div>
+                  <div className="text-xs text-white/20"> todo </div>
+                </div>
+              </div>
+            </div>
+            
           </GlassPanel>
 
           {/* Center Panels */}
@@ -413,8 +433,8 @@ const GlassPanel = ({ children, className = '' }) => (
           </div>
 
           {/* Right Panel - Top Processes */}
-          <GlassPanel className="col-span-3 p-4">
-            <div className="text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <GlassPanel className="col-span-3 p-4 ">
+            <div className="pt-20 text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
               Top Processes
             </div>
             <div className="space-y-2">
