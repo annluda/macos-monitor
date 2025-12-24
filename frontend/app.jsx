@@ -361,59 +361,67 @@ const GlassPanel = ({ children, className = '' }) => (
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase">Download</div>
-                    <div className="text-lg font-bold text-emerald-900">{formatBytes(downloadSpeed)}/s</div>
+                    <div className="text-lg font-bold text-white/30">{formatBytes(downloadSpeed)}/s</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase">Upload</div>
-                    <div className="text-lg font-bold text-sky-900">{formatBytes(uploadSpeed)}/s</div>
+                    <div className="text-lg font-bold text-white/30">{formatBytes(uploadSpeed)}/s</div>
                   </div>
                 </div>
               </div>
               
               {/* Wave Scan */}
-              <div className="h-32 relative bg-white/5 rounded overflow-hidden">
-                <svg className="w-full h-full">
+              <div className="h-32 relative bg-white/0 rounded overflow-hidden">
+                <svg className="w-full h-full" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#ffffff" stopOpacity="0.6" />
-                      <stop offset="100%" stopColor="#ffffff" stopOpacity="0.1" />
+                      <stop offset="0%" stopColor="#ffffffff" stopOpacity="0.4" />
+                      <stop offset="100%" stopColor="#ffffffff" stopOpacity="0.1" />
                     </linearGradient>
                   </defs>
-                  {hourlyData.length > 0 && (() => {
+
+                  {hourlyData.length > 1 && (() => {
                     const maxDownload = Math.max(...hourlyData.map(d => d.download), 0.01);
                     const maxUpload = Math.max(...hourlyData.map(d => d.upload), 0.01);
-
-                    const downloadPoints = hourlyData.map((d, i) => {
-                      const x = (i / (hourlyData.length - 1)) * 100;
-                      const y = 100 - (d.download / maxDownload) * 100;
-                      return `${x},${y}`;
-                    }).join(' ');
+                    const len = hourlyData.length - 1;
 
                     const uploadPoints = hourlyData.map((d, i) => {
-                      const x = (i / (hourlyData.length - 1)) * 100;
-                      const y = 100 - (d.upload / maxUpload) * 75;
-                      return `${x},${y}`;
+                      const x = (i / len) * 100;
+                      const y = 100 - (d.upload / maxUpload) * 60;
+                      return `${x.toFixed(2)},${y.toFixed(2)}`;
+                    }).join(' ');
+
+                    const downloadPoints = hourlyData.map((d, i) => {
+                      const x = (i / len) * 100;
+                      const y = 100 - (d.download / maxDownload) * 80;
+                      return `${x.toFixed(2)},${y.toFixed(2)}`;
                     }).join(' ');
 
                     return (
                       <>
-                        <polyline
-                          points={uploadPoints}
-                          fill="none"
-                          stroke="url(#waveGrad)"
-                          strokeWidth="2"
-                          vectorEffect="non-scaling-stroke"
-                        />
-                        
-                        <polyline
-                          points={downloadPoints}
-                          fill="none"
-                          stroke="url(#waveGrad)"
-                          strokeWidth="2"
-                          vectorEffect="non-scaling-stroke"
-                        />
+                        <svg x="51%" y="0" width="40%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                          <polyline
+                            points={uploadPoints}
+                            fill="none"
+                            stroke="url(#waveGrad)"
+                            strokeWidth="2"
+                            vectorEffect="non-scaling-stroke"
+                          />
+                        </svg>
+
+                        <svg x="9%" y="0" width="40%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                           <g transform="scale(-1, 1) translate(-100, 0)">
+                              <polyline
+                                points={downloadPoints}
+                                fill="none"
+                                stroke="url(#waveGrad)"
+                                strokeWidth="2"
+                                vectorEffect="non-scaling-stroke"
+                              />
+                            </g>
+                        </svg>
                       </>
                     );
                   })()}
