@@ -210,31 +210,31 @@ const App = () => {
     );
   };
 
-  const GlassPanel = ({ children, className = '' }) => (
-    <div className={`relative rounded-lg ${className}`}>
-      {/* 背景与网格容器：应用渐变遮罩 */}
-      <div 
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          // 使用 mask-image 实现中间向上下透明
-          // black 代表不透明（显示），transparent 代表透明（隐藏）
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 40%, transparent)',
-          maskImage: 'linear-gradient(to bottom, transparent, black 40%, transparent)'
-        }}
-      >
-        {/* 磨砂玻璃背景 */}
-        <div className="absolute inset-0 backdrop-blur-md bg-white/10 rounded-lg" />
-        
-        {/* 网格线 */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:3px_3px] rounded-lg" />
-      </div>
-
-      {/* 内容层：确保在背景之上且不受遮罩影响 */}
-      <div className="relative z-10">
-        {children}
-      </div>
+const GlassPanel = ({ children, className = '' }) => (
+  <div className={`relative rounded-lg overflow-hidden ${className}`}>
+    <div 
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        // 这个 mask 决定了背景、网格和光束在垂直方向上的可见度（上下渐隐）
+        WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 30%, black 70%, transparent)',
+        maskImage: 'linear-gradient(to bottom, transparent, black 30%, black 70%, transparent)'
+      }}
+    >
+      {/* 磨砂玻璃背景 */}
+      <div className="absolute inset-0 backdrop-blur-md bg-white/5" />
+      {/* 网格线 */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:3px_3px]" />
+      {/* 左侧光束 */}
+      <div className="absolute left-0 inset-y-0 w-[2px] bg-gradient-to-r from-white/20 to-transparent shadow-[0_0_15px_rgba(255,255,255,0.2)]"></div>
+      {/* 右侧光束 */}
+      <div className="absolute right-0 inset-y-0 w-[2px] bg-gradient-to-l from-white/20 to-transparent shadow-[0_0_15px_rgba(255,255,255,0.2)]"></div>
     </div>
-  );
+
+    <div className="relative z-10 p-4">
+      {children}
+    </div>
+  </div>
+);
 
   const GlassPanelNoBG = ({ children, className = '' }) => (
     <div className={`relative bg-white/0 ${className}`}>
