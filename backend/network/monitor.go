@@ -186,8 +186,6 @@ func (m *Monitor) performSample() {
 		upBPS = float64(currentStats.BytesSent-m.lastSample.BytesSent) / deltaT
 	}
 
-	fmt.Printf("Sampled: DownBPS=%.2f, UpBPS=%.2f over %.2fs\n", downBPS, upBPS, deltaT)
-
 	// Update moving average
 	smoothDownBPS := m.downRateMA.add(downBPS)
 	smoothUpBPS := m.upRateMA.add(upBPS)
