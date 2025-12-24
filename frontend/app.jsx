@@ -185,9 +185,9 @@ const App = () => {
           </GlassPanel>
 
           {/* Center Panels */}
-          <div className="col-span-6 space-y-4">
+          <div className="col-span-6 space-y-1">
             {/* Core Meters Row */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2">
               <GlassPanelNoBG className="p-6 flex justify-center items-center">
                 <CircularMeter value={memoryUsage} label="内存"/>
               </GlassPanelNoBG>
