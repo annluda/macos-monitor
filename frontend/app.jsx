@@ -43,13 +43,13 @@ const App = () => {
   }, []);
 
   const weekData = [
-    { day: 'Mon', traffic: 2847 },
-    { day: 'Tue', traffic: 3201 },
-    { day: 'Wed', traffic: 2956 },
-    { day: 'Thu', traffic: 3487 },
-    { day: 'Fri', traffic: 3821 },
-    { day: 'Sat', traffic: 2634 },
-    { day: 'Sun', traffic: 2912 }
+    { day: 'Mon', upload: 1247, download: 2847 },
+    { day: 'Tue', upload: 1501, download: 3201 },
+    { day: 'Wed', upload: 1156, download: 2956 },
+    { day: 'Thu', upload: 1887, download: 3487 },
+    { day: 'Fri', upload: 2221, download: 3821 },
+    { day: 'Sat', upload: 934, download: 2634 },
+    { day: 'Sun', upload: 1112, download: 2912 }
   ];
 
   const topProcesses = [
@@ -159,28 +159,51 @@ const App = () => {
         <div className="grid grid-cols-12 gap-4">
           {/* Left Panel - 7 Day Traffic */}
           <GlassPanel className="col-span-3 p-4">
-            <div className="text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
-              7-Day Traffic Log
+            <div>
+              <div className="text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Upload size={14} /> 7-Day Upload
+              </div>
+              <div className="flex justify-between items-end h-28 px-1">
+                {weekData.map((item, idx) => {
+                  const maxUpload = Math.max(...weekData.map(d => d.upload));
+                  const height = (item.upload / maxUpload) * 100;
+                  return (
+                    <div key={idx} className="flex flex-col items-center w-6 text-center">
+                      <div className="text-white/70 text-[10px]">{item.upload}</div>
+                      <div className="w-3 h-20 bg-white/10 rounded-full flex items-end mt-1">
+                        <div 
+                          className="w-full bg-gradient-to-b from-sky-400 to-sky-600 rounded-full transition-all duration-500"
+                          style={{ height: `${height}%`, boxShadow: '0 0 8px rgba(56, 189, 248, 0.4)' }}
+                        />
+                      </div>
+                      <div className="text-white/50 text-xs mt-1">{item.day}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="space-y-3">
-              {weekData.map((item, idx) => {
-                const maxTraffic = Math.max(...weekData.map(d => d.traffic));
-                const width = (item.traffic / maxTraffic) * 100;
-                return (
-                  <div key={idx}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-white/50">{item.day}</span>
-                      <span className="text-white/70">{item.traffic}</span>
+            <div className="mt-8">
+              <div className="text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <Download size={14} /> 7-Day Download
+              </div>
+              <div className="flex justify-between items-end h-28 px-1">
+                {weekData.map((item, idx) => {
+                  const maxDownload = Math.max(...weekData.map(d => d.download));
+                  const height = (item.download / maxDownload) * 100;
+                  return (
+                    <div key={idx} className="flex flex-col items-center w-6 text-center">
+                      <div className="text-white/70 text-[10px]">{item.download}</div>
+                      <div className="w-3 h-20 bg-white/10 rounded-full flex items-end mt-1">
+                        <div 
+                          className="w-full bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full transition-all duration-500"
+                          style={{ height: `${height}%`, boxShadow: '0 0 8px rgba(52, 211, 153, 0.4)' }}
+                        />
+                      </div>
+                      <div className="text-white/50 text-xs mt-1">{item.day}</div>
                     </div>
-                    <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-white/40 to-white/60 rounded-full transition-all duration-500"
-                        style={{ width: `${width}%`, boxShadow: '0 0 10px rgba(255, 255, 255, 0.3)' }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </GlassPanel>
 
