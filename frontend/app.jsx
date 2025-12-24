@@ -82,12 +82,8 @@ const App = () => {
         .then(response => response.json())
         .then(data => {
           const newHourlyData = data.points.map(point => ({
-            // The time formatting should be based on current time - offset_min.
-            // Assuming points are for the last hour, 0-indexed minute from now.
-            // The API spec has 'offset_min: 59' as the first point.
-            // So if `time` is the current time, we want `time - 59 minutes`, `time - 58 minutes`, etc.
             time: new Date(new Date().getTime() - point.offset_min * 60 * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-            value: Math.round((point.down_bps + point.up_bps) / 125000) // Convert BPS to Mbps (1,000,000 bits/s = 1 Mbps; 1 byte = 8 bits. So 1,000,000 / 8 = 125,000 Bytes/s)
+            value: ((point.down_bps || 0) + (point.up_bps || 0)) / (1024 * 1024) // Convert to MB/s
           }));
           // The API provides data from most recent (offset_min: 59) to oldest (offset_min: 0).
           // For display, it's usually oldest to newest.
@@ -117,8 +113,8 @@ const App = () => {
       // Convert BPS to MB/s (Bytes per second to Megabytes per second)
       // 1 Byte = 8 bits, 1 MB = 1024*1024 Bytes.
       // So, BPS / (1024 * 1024) to get MBps (MegaBytes per second)
-      setUploadSpeed(data.up_bps / (1024 * 1024)); 
-      setDownloadSpeed(data.down_bps / (1024 * 1024));
+      setUploadSpeed((data.up_bps || 0) / (1024 * 1024)); 
+      setDownloadSpeed((data.down_bps || 0) / (1024 * 1024));
     };
     ws.onerror = (error) => {
       console.error('WebSocket Error:', error);
