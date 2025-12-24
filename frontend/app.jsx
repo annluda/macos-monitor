@@ -358,16 +358,16 @@ const GlassPanel = ({ children, className = '' }) => (
             {/* Network Activity */}
             <GlassPanelNoBG className="p-4">
               <div className="grid grid-cols-2 gap-4 mb-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-end gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase">Download</div>
-                    <div className="text-lg font-bold text-white/30">{formatBytes(downloadSpeed)}/s</div>
+                    <div className="text-lg font-bold text-white/30">{formatBytes(downloadSpeed / 8)}/s</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase">Upload</div>
-                    <div className="text-lg font-bold text-white/30">{formatBytes(uploadSpeed)}/s</div>
+                    <div className="text-lg font-bold text-white/30">{formatBytes(uploadSpeed / 8)}/s</div>
                   </div>
                 </div>
               </div>
@@ -422,6 +422,12 @@ const GlassPanel = ({ children, className = '' }) => (
                               />
                             </g>
                         </svg>
+                        <text x="100%" y="25%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.2)" font-size="8">
+                          Max Up: {formatBytes(maxUpload / 8)}/s
+                        </text>
+                        <text x="100%" y="15%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.3)" font-size="8">
+                          Max Down: {formatBytes(maxDownload / 8)}/s
+                        </text>
                       </>
                     );
                   })()}

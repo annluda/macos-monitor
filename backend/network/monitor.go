@@ -15,8 +15,8 @@ const (
 	persistenceInterval  = 1 * time.Minute
 	maxSleepInterval     = 10 * time.Second
 	movingAverageWindow  = 3
-	hourlyPoints         = 20 // 60 minutes / 5 minutes
-	hourlyInterval       = 3 * time.Minute
+	hourlyPoints         = 60 // 60 minutes / 5 minutes
+	hourlyInterval       = 1 * time.Minute
 )
 
 // IOStats holds the raw byte counters for an interface at a specific time.
