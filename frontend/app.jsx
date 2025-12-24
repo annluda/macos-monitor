@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Cpu, HardDrive, Upload, Download, Zap } from 'lucide-react';
 
 const App = () => {
   const [time, setTime] = useState(new Date());
@@ -24,6 +23,7 @@ const App = () => {
   const [weekData, setWeekData] = useState([]);
   const [topProcesses, setTopProcesses] = useState([]);
   const [hourlyData, setHourlyData] = useState([]);
+  const [sinceBootStats, setSinceBootStats] = useState({ up_bytes: 0, down_bytes: 0 });
 
   useEffect(() => {
     // Fetch static data once
@@ -74,6 +74,9 @@ const App = () => {
           })).reverse(); // Reverse to have Mon as first and Sun as last if needed, or based on API order.
           // The API returns most recent first, so reverse to have oldest first for chart.
           setWeekData(newWeekData);
+          if (data.since_boot) {
+            setSinceBootStats(data.since_boot);
+          }
         })
         .catch(error => console.error('Error fetching daily network data:', error));
 
@@ -119,8 +122,8 @@ const App = () => {
       // Convert BPS to MB/s (Bytes per second to Megabytes per second)
       // 1 Byte = 8 bits, 1 MB = 1024*1024 Bytes.
       // So, BPS / (1024 * 1024) to get MBps (MegaBytes per second)
-      setUploadSpeed((data.up_bps || 0) / 1024); 
-      setDownloadSpeed((data.down_bps || 0) / 1024);
+      setUploadSpeed((data.up_bps || 0)); 
+      setDownloadSpeed((data.down_bps || 0));
     };
     ws.onerror = (error) => {
       console.error('WebSocket Error:', error);
@@ -146,6 +149,17 @@ const App = () => {
     if (h > 0 || d > 0) uptimeString += `${h}h `; // Show hours if days exist or hours > 0
     if (m > 0 || h > 0 || d > 0) uptimeString += `${m}m `; // Show minutes if hours exist or minutes > 0
     return uptimeString.trim();
+  };
+
+  const formatBytes = (bytes, decimals = 1) => {
+    if (bytes === 0) return '0 B'; // Handle 0 bytes case
+    if (bytes < 1024 * 1024) { // Less than 1 MB
+      return (bytes / 1024).toFixed(decimals) + ' KB';
+    } else if (bytes < 1024 * 1024 * 1024) { // Less than 1 GB
+      return (bytes / (1024 * 1024)).toFixed(decimals) + ' MB';
+    } else {
+      return (bytes / (1024 * 1024 * 1024)).toFixed(decimals) + ' GB';
+    }
   };
 
   const CircularMeter = ({ value, label, size = 'small' }) => {
@@ -314,11 +328,11 @@ const GlassPanel = ({ children, className = '' }) => (
               <div className="grid grid-cols-2 gap-1 text-center">
                 <div className="p-1 bg-white/0 rounded">
                   <div className="text-xs font-bold text-white/10 uppercase">Upload</div>
-                  <div className="text-xs text-white/20"> todo </div>
+                  <div className="text-xs text-white/20"> {formatBytes(sinceBootStats.up_bytes, 0)} </div>
                 </div>
                 <div className="p-1 rounded">
                   <div className="text-xs font-bold text-white/10 uppercase">Download</div>
-                  <div className="text-xs text-white/20"> todo </div>
+                  <div className="text-xs text-white/20"> {formatBytes(sinceBootStats.down_bytes, 0)} </div>
                 </div>
               </div>
             </div>
@@ -348,13 +362,13 @@ const GlassPanel = ({ children, className = '' }) => (
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase">Upload</div>
-                    <div className="text-lg font-bold text-white/60">{uploadSpeed.toFixed(1)} KB/s</div>
+                    <div className="text-lg font-bold text-sky-900">{formatBytes(uploadSpeed)}/s</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase">Download</div>
-                    <div className="text-lg font-bold text-white/60">{downloadSpeed.toFixed(1)} KB/s</div>
+                    <div className="text-lg font-bold text-emerald-900">{formatBytes(downloadSpeed)}/s</div>
                   </div>
                 </div>
               </div>
