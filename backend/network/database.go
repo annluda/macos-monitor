@@ -3,6 +3,7 @@ package network
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -94,28 +95,44 @@ func (m *DBManager) UpdateSample(stats IOStats) error {
 	return tx.Commit()
 }
 
-// GetDailyTrafficForLast7Days retrieves aggregated traffic data for the past 7 days.
 func (m *DBManager) GetDailyTrafficForLast7Days() ([]DailyTraffic, error) {
 	sevenDaysAgo := time.Now().AddDate(0, 0, -6).Format("2006-01-02")
 	rows, err := m.db.Query(`
-		SELECT date, last_bytes_recv - first_bytes_recv, last_bytes_sent - first_bytes_sent
-		FROM daily_traffic
-		WHERE date >= ?
-		ORDER BY date DESC
-	`, sevenDaysAgo)
+        SELECT date, last_bytes_recv - first_bytes_recv, last_bytes_sent - first_bytes_sent
+        FROM daily_traffic
+        WHERE date >= ?
+    `, sevenDaysAgo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query daily traffic: %w", err)
 	}
 	defer rows.Close()
 
-	var results []DailyTraffic
+	trafficByDate := make(map[string]DailyTraffic)
 	for rows.Next() {
 		var dt DailyTraffic
 		if err := rows.Scan(&dt.Date, &dt.DownBytes, &dt.UpBytes); err != nil {
 			return nil, fmt.Errorf("failed to scan daily traffic row: %w", err)
 		}
-		results = append(results, dt)
+		trafficByDate[dt.Date] = dt
 	}
+
+	var results []DailyTraffic
+	for i := 0; i < 7; i++ {
+		date := time.Now().AddDate(0, 0, -i).Format("2006-01-02")
+		if traffic, ok := trafficByDate[date]; ok {
+			results = append(results, traffic)
+		} else {
+			results = append(results, DailyTraffic{
+				Date:      date,
+				DownBytes: 0,
+				UpBytes:   0,
+			})
+		}
+	}
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Date > results[j].Date
+	})
 
 	return results, nil
 }
+
