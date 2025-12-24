@@ -7,7 +7,6 @@ const App = () => {
   const [storageUsage, setStorageUsage] = useState(0); // Initialize with 0
   const [uploadSpeed, setUploadSpeed] = useState(0);
   const [downloadSpeed, setDownloadSpeed] = useState(0);
-  const [scanAnimation, setScanAnimation] = useState(0);
 
   const [osVersion, setOsVersion] = useState('');
   const [localIp, setLocalIp] = useState('');
@@ -86,7 +85,8 @@ const App = () => {
         .then(data => {
           const newHourlyData = data.points.map(point => ({
             time: new Date(new Date().getTime() - point.offset_min * 60 * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
-            value: ((point.down_bps || 0) + (point.up_bps || 0)) / (1024 * 1024) // Convert to MB/s
+            download: (point.down_bps || 0),
+            upload: (point.up_bps || 0) 
           }));
           // The API provides data from most recent (offset_min: 59) to oldest (offset_min: 0).
           // For display, it's usually oldest to newest.
@@ -98,7 +98,6 @@ const App = () => {
     const timer = setInterval(() => {
       setTime(new Date());
       fetchData();
-      setScanAnimation(prev => (prev + 2) % 360);
       // Calculate and set uptime string
       if (bootTime) {
         const now = new Date();
@@ -361,20 +360,20 @@ const GlassPanel = ({ children, className = '' }) => (
               <div className="grid grid-cols-2 gap-4 mb-3">
                 <div className="flex items-center gap-3">
                   <div>
-                    <div className="text-xs text-white/40 uppercase">Upload</div>
-                    <div className="text-lg font-bold text-sky-900">{formatBytes(uploadSpeed)}/s</div>
+                    <div className="text-xs text-white/40 uppercase">Download</div>
+                    <div className="text-lg font-bold text-emerald-900">{formatBytes(downloadSpeed)}/s</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div>
-                    <div className="text-xs text-white/40 uppercase">Download</div>
-                    <div className="text-lg font-bold text-emerald-900">{formatBytes(downloadSpeed)}/s</div>
+                    <div className="text-xs text-white/40 uppercase">Upload</div>
+                    <div className="text-lg font-bold text-sky-900">{formatBytes(uploadSpeed)}/s</div>
                   </div>
                 </div>
               </div>
               
               {/* Wave Scan */}
-              <div className="h-32 relative bg-white/0 rounded overflow-hidden">
+              <div className="h-32 relative bg-white/5 rounded overflow-hidden">
                 <svg className="w-full h-full">
                   <defs>
                     <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -383,47 +382,42 @@ const GlassPanel = ({ children, className = '' }) => (
                     </linearGradient>
                   </defs>
                   {hourlyData.length > 0 && (() => {
-                    const maxHourlyValue = Math.max(...hourlyData.map(d => d.value));
-                    return hourlyData.map((d, i) => {
+                    const maxDownload = Math.max(...hourlyData.map(d => d.download), 0.01);
+                    const maxUpload = Math.max(...hourlyData.map(d => d.upload), 0.01);
+
+                    const downloadPoints = hourlyData.map((d, i) => {
                       const x = (i / (hourlyData.length - 1)) * 100;
-                      const y = 100 - (d.value / maxHourlyValue) * 100; // Scale based on max value
-                      return (
-                        <circle
-                          key={i}
-                          cx={`${x}%`}
-                          cy={`${y}%`}
-                          r="2"
-                          fill="#ffffff"
-                          opacity="0.5"
-                        />
-                      );
-                    });
-                  })()}
-                  {hourlyData.length > 0 && (() => {
-                    const maxHourlyValue = Math.max(...hourlyData.map(d => d.value));
-                    const points = hourlyData.map((d, i) => {
-                      const x = (i / (hourlyData.length - 1)) * 100;
-                      const y = 100 - (d.value / maxHourlyValue) * 100;
+                      const y = 100 - (d.download / maxDownload) * 100;
                       return `${x},${y}`;
                     }).join(' ');
+
+                    const uploadPoints = hourlyData.map((d, i) => {
+                      const x = (i / (hourlyData.length - 1)) * 100;
+                      const y = 100 - (d.upload / maxUpload) * 75;
+                      return `${x},${y}`;
+                    }).join(' ');
+
                     return (
-                      <polyline
-                        points={points}
-                        fill="none"
-                        stroke="url(#waveGrad)"
-                        strokeWidth="2"
-                        vectorEffect="non-scaling-stroke"
-                      />
+                      <>
+                        <polyline
+                          points={uploadPoints}
+                          fill="none"
+                          stroke="url(#waveGrad)"
+                          strokeWidth="2"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                        
+                        <polyline
+                          points={downloadPoints}
+                          fill="none"
+                          stroke="url(#waveGrad)"
+                          strokeWidth="2"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      </>
                     );
                   })()}
                 </svg>
-                <div 
-                  className="absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-white/60 via-white/80 to-transparent"
-                  style={{ 
-                    left: `${(scanAnimation / 360) * 100}%`,
-                    boxShadow: '0 0 10px rgba(255, 255, 255, 0.6)'
-                  }}
-                />
               </div>
             </GlassPanelNoBG>
 
