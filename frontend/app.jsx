@@ -406,7 +406,7 @@ const GlassPanel = ({ children, className = '' }) => (
                             points={uploadPoints}
                             fill="none"
                             stroke="url(#waveGrad)"
-                            strokeWidth="2"
+                            strokeWidth="1"
                             vectorEffect="non-scaling-stroke"
                           />
                         </svg>
@@ -417,7 +417,7 @@ const GlassPanel = ({ children, className = '' }) => (
                                 points={downloadPoints}
                                 fill="none"
                                 stroke="url(#waveGrad)"
-                                strokeWidth="2"
+                                strokeWidth="1"
                                 vectorEffect="non-scaling-stroke"
                               />
                             </g>
