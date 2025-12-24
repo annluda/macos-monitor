@@ -3,67 +3,149 @@ import { Activity, Cpu, HardDrive, Upload, Download, Zap } from 'lucide-react';
 
 const App = () => {
   const [time, setTime] = useState(new Date());
-  const [cpuUsage, setCpuUsage] = useState(67);
-  const [memoryUsage, setMemoryUsage] = useState(58);
-  const [storageUsage, setStorageUsage] = useState(73);
+  const [cpuUsage, setCpuUsage] = useState(0); // Initialize with 0
+  const [memoryUsage, setMemoryUsage] = useState(0); // Initialize with 0
+  const [storageUsage, setStorageUsage] = useState(0); // Initialize with 0
   const [uploadSpeed, setUploadSpeed] = useState(0);
   const [downloadSpeed, setDownloadSpeed] = useState(0);
   const [scanAnimation, setScanAnimation] = useState(0);
 
   const [osVersion, setOsVersion] = useState('');
   const [localIp, setLocalIp] = useState('');
-  const [uptime, setUptime] = useState('');
+  const [uptime, setUptime] = useState(''); // This will be a formatted string
+
+  // New state variables for static info
+  const [cpuInfo, setCpuInfo] = useState('');
+  const [totalMemory, setTotalMemory] = useState(0); // Bytes
+  const [totalDisk, setTotalDisk] = useState(0); // Bytes
+  const [bootTime, setBootTime] = useState(null); // Date object for boot time
+
+  // State variables for dynamic data that were previously hardcoded
+  const [weekData, setWeekData] = useState([]);
+  const [topProcesses, setTopProcesses] = useState([]);
+  const [hourlyData, setHourlyData] = useState([]);
+
+  useEffect(() => {
+    // Fetch static data once
+    fetch('http://localhost:8000/api/system/static')
+      .then(response => response.json())
+      .then(data => {
+        setOsVersion(data.os_version);
+        setLocalIp(data.local_ip);
+        setCpuInfo(data.cpu_info);
+        setTotalMemory(data.total_memory);
+        setTotalDisk(data.total_disk);
+        setBootTime(new Date(data.boot_time)); // Parse boot time
+      })
+      .catch(error => console.error('Error fetching static data:', error));
+  }, []); // Empty dependency array means this runs once on mount
 
   useEffect(() => {
     const fetchData = () => {
-      fetch('http://localhost:3001/api/stats')
+      // Dynamic data
+      fetch('http://localhost:8000/api/system/dynamic')
         .then(response => response.json())
         .then(data => {
-          setCpuUsage(data.cpuUsage);
-          setMemoryUsage(data.memoryUsage);
-          setStorageUsage(data.storageUsage);
-          setUploadSpeed(data.uploadSpeed);
-          setDownloadSpeed(data.downloadSpeed);
-          setOsVersion(data.os_version);
-          setLocalIp(data.local_ip);
-          setUptime(data.uptime);
+          setCpuUsage(data.cpu_percent);
+          setMemoryUsage(data.memory_percent);
+          setStorageUsage(data.disk_percent);
+
+          // Update top processes
+          const mappedProcesses = data.processes.map(proc => ({
+            name: proc.name,
+            cpu: proc.cpu_percent,
+            // Convert memory_rss (bytes) to percentage of total memory
+            // Ensure totalMemory is available, otherwise default to 0
+            mem: totalMemory ? (proc.memory_rss / totalMemory) * 100 : 0
+          }));
+          setTopProcesses(mappedProcesses);
         })
-        .catch(error => console.error('Error fetching data:', error));
+        .catch(error => console.error('Error fetching dynamic data:', error));
+
+      // Daily network traffic
+      fetch('http://localhost:8000/api/network/daily')
+        .then(response => response.json())
+        .then(data => {
+          // Map daily_7d to weekData
+          const newWeekData = data.daily_7d.map(daily => ({
+            day: new Date(daily.date).toLocaleDateString('en-US', { weekday: 'short' }), // e.g., "Mon"
+            upload: Math.round(daily.up_bytes / (1024 * 1024)), // Convert to MB
+            download: Math.round(daily.down_bytes / (1024 * 1024)) // Convert to MB
+          })).reverse(); // Reverse to have Mon as first and Sun as last if needed, or based on API order.
+          // The API returns most recent first, so reverse to have oldest first for chart.
+          setWeekData(newWeekData);
+        })
+        .catch(error => console.error('Error fetching daily network data:', error));
+
+      // Hourly network rate
+      fetch('http://localhost:8000/api/network/hourly')
+        .then(response => response.json())
+        .then(data => {
+          const newHourlyData = data.points.map(point => ({
+            // The time formatting should be based on current time - offset_min.
+            // Assuming points are for the last hour, 0-indexed minute from now.
+            // The API spec has 'offset_min: 59' as the first point.
+            // So if `time` is the current time, we want `time - 59 minutes`, `time - 58 minutes`, etc.
+            time: new Date(new Date().getTime() - point.offset_min * 60 * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+            value: Math.round((point.down_bps + point.up_bps) / 125000) // Convert BPS to Mbps (1,000,000 bits/s = 1 Mbps; 1 byte = 8 bits. So 1,000,000 / 8 = 125,000 Bytes/s)
+          }));
+          // The API provides data from most recent (offset_min: 59) to oldest (offset_min: 0).
+          // For display, it's usually oldest to newest.
+          setHourlyData(newHourlyData.reverse());
+        })
+        .catch(error => console.error('Error fetching hourly network data:', error));
     };
 
     const timer = setInterval(() => {
       setTime(new Date());
       fetchData();
       setScanAnimation(prev => (prev + 2) % 360);
+      // Calculate and set uptime string
+      if (bootTime) {
+        const now = new Date();
+        const diffSeconds = Math.floor((now.getTime() - bootTime.getTime()) / 1000);
+        setUptime(formatUptime(diffSeconds));
+      }
     }, 1000);
 
     fetchData(); // Initial fetch
 
-    return () => clearInterval(timer);
-  }, []);
+    // WebSocket for real-time network speed
+    const ws = new WebSocket('ws://localhost:8000/ws/network/realtime');
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      // Convert BPS to MB/s (Bytes per second to Megabytes per second)
+      // 1 Byte = 8 bits, 1 MB = 1024*1024 Bytes.
+      // So, BPS / (1024 * 1024) to get MBps (MegaBytes per second)
+      setUploadSpeed(data.up_bps / (1024 * 1024)); 
+      setDownloadSpeed(data.down_bps / (1024 * 1024));
+    };
+    ws.onerror = (error) => {
+      console.error('WebSocket Error:', error);
+    };
+    ws.onclose = () => {
+      console.log('WebSocket Closed');
+    };
 
-  const weekData = [
-    { day: 'Mon', upload: 1247, download: 2847 },
-    { day: 'Tue', upload: 1501, download: 3201 },
-    { day: 'Wed', upload: 1156, download: 2956 },
-    { day: 'Thu', upload: 1887, download: 3487 },
-    { day: 'Fri', upload: 2221, download: 3821 },
-    { day: 'Sat', upload: 934, download: 2634 },
-    { day: 'Sun', upload: 1112, download: 2912 }
-  ];
+    return () => {
+      clearInterval(timer);
+      ws.close();
+    };
+  }, [bootTime, totalMemory]);
 
-  const topProcesses = [
-    { name: 'nav.sys', cpu: 34, mem: 28 },
-    { name: 'shield.core', cpu: 28, mem: 42 },
-    { name: 'life.support', cpu: 23, mem: 31 },
-    { name: 'quantum.engine', cpu: 19, mem: 25 },
-    { name: 'comm.array', cpu: 15, mem: 18 }
-  ];
 
-  const hourlyData = Array.from({ length: 12 }, (_, i) => ({
-    time: `${String(time.getHours() - 11 + i).padStart(2, '0')}:00`,
-    value: 30 + Math.random() * 70
-  }));
+
+  const formatUptime = (seconds) => {
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor((seconds % (3600 * 24)) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+
+    let uptimeString = '';
+    if (d > 0) uptimeString += `${d}d `;
+    if (h > 0 || d > 0) uptimeString += `${h}h `; // Show hours if days exist or hours > 0
+    if (m > 0 || h > 0 || d > 0) uptimeString += `${m}m `; // Show minutes if hours exist or minutes > 0
+    return uptimeString.trim();
+  };
 
   const CircularMeter = ({ value, label, size = 'small' }) => {
 
@@ -148,12 +230,9 @@ const App = () => {
       
       <div className="relative z-10 max-w-7xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white/90 tracking-widest mb-2" style={{ textShadow: '0 0 20px rgba(255, 255, 255, 0.3)' }}>
+          <h1 className="text-5xl font-bold text-white/30 tracking-widest mb-2" >
             MAC MINI M2
           </h1>
-          <div className="text-white/40 text-sm tracking-wider">
-            「os_version」 | 「local_ip」| 「uptime」
-          </div>
         </div>
 
         <div className="grid grid-cols-12 gap-4">
@@ -242,7 +321,7 @@ const App = () => {
               </div>
               
               {/* Wave Scan */}
-              <div className="h-24 relative bg-white/0 rounded overflow-hidden">
+              <div className="h-32 relative bg-white/0 rounded overflow-hidden">
                 <svg className="w-full h-full">
                   <defs>
                     <linearGradient id="waveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -250,31 +329,40 @@ const App = () => {
                       <stop offset="100%" stopColor="#ffffff" stopOpacity="0.1" />
                     </linearGradient>
                   </defs>
-                  {hourlyData.map((d, i) => {
-                    const x = (i / (hourlyData.length - 1)) * 100;
-                    const y = 100 - (d.value * 0.8);
+                  {hourlyData.length > 0 && (() => {
+                    const maxHourlyValue = Math.max(...hourlyData.map(d => d.value));
+                    return hourlyData.map((d, i) => {
+                      const x = (i / (hourlyData.length - 1)) * 100;
+                      const y = 100 - (d.value / maxHourlyValue) * 100; // Scale based on max value
+                      return (
+                        <circle
+                          key={i}
+                          cx={`${x}%`}
+                          cy={`${y}%`}
+                          r="2"
+                          fill="#ffffff"
+                          opacity="0.5"
+                        />
+                      );
+                    });
+                  })()}
+                  {hourlyData.length > 0 && (() => {
+                    const maxHourlyValue = Math.max(...hourlyData.map(d => d.value));
+                    const points = hourlyData.map((d, i) => {
+                      const x = (i / (hourlyData.length - 1)) * 100;
+                      const y = 100 - (d.value / maxHourlyValue) * 100;
+                      return `${x},${y}`;
+                    }).join(' ');
                     return (
-                      <circle
-                        key={i}
-                        cx={`${x}%`}
-                        cy={`${y}%`}
-                        r="2"
-                        fill="#ffffff"
-                        opacity="0.5"
+                      <polyline
+                        points={points}
+                        fill="none"
+                        stroke="url(#waveGrad)"
+                        strokeWidth="2"
+                        vectorEffect="non-scaling-stroke"
                       />
                     );
-                  })}
-                  <polyline
-                    points={hourlyData.map((d, i) => {
-                      const x = (i / (hourlyData.length - 1)) * 100;
-                      const y = 100 - (d.value * 0.8);
-                      return `${x},${y}`;
-                    }).join(' ')}
-                    fill="none"
-                    stroke="url(#waveGrad)"
-                    strokeWidth="2"
-                    vectorEffect="non-scaling-stroke"
-                  />
+                  })()}
                 </svg>
                 <div 
                   className="absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-white/60 via-white/80 to-transparent"
@@ -285,6 +373,24 @@ const App = () => {
                 />
               </div>
             </GlassPanelNoBG>
+
+            {/* System Status */}
+            <div>
+              <div className="grid grid-cols-3 gap-1 text-center">
+                <div className="p-1 rounded">
+                  <div className="text-xs font-bold text-white/10 uppercase">OS Version</div>
+                  <div className="text-xs text-white/20">{osVersion}</div>
+                </div>
+                <div className="p-1 bg-white/0 rounded">
+                  <div className="text-xs font-bold text-white/10 uppercase">uptime</div>
+                  <div className="text-xs text-white/20">{uptime}</div>
+                </div>
+                <div className="p-1 rounded">
+                  <div className="text-xs font-bold text-white/10 uppercase">local Ip</div>
+                  <div className="text-xs text-white/20">{localIp}</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Right Panel - Top Processes */}
@@ -292,17 +398,17 @@ const App = () => {
             <div className="text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
               Top Processes
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {topProcesses.map((proc, idx) => (
-                <div key={idx} className="p-3 bg-white/5 rounded">
+                <div key={idx} className="py-2">
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-white/40">{proc.name}</span>
-                      <span className="text-white/70">{proc.cpu}% {proc.mem}</span>
+                      <span className="text-sm text-white/60 truncate">{proc.name}</span>
+                      <span className="text-sm font-medium text-white/30 tabular-nums">{proc.cpu.toFixed(0)}%</span>
                     </div>
-                    <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-0.5 bg-white/10 rounded-full overflow-hidden mt-2">
                       <div 
-                        className="h-full bg-gradient-to-r from-white/10 to-white/40 rounded-full"
+                        className="h-full bg-gradient-to-r from-white/20 to-white/50 rounded-full"
                         style={{ width: `${proc.cpu}%` }}
                       />
                     </div>
