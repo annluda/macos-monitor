@@ -106,6 +106,12 @@ const App = () => {
 
     fetchData(); // Initial fetch
 
+    return () => {
+      clearInterval(timer);
+    };
+  }, [bootTime, totalMemory]);
+
+  useEffect(() => {
     // WebSocket for real-time network speed
     const ws = new WebSocket('ws://localhost:8000/ws/network/realtime');
     ws.onmessage = (event) => {
@@ -113,8 +119,8 @@ const App = () => {
       // Convert BPS to MB/s (Bytes per second to Megabytes per second)
       // 1 Byte = 8 bits, 1 MB = 1024*1024 Bytes.
       // So, BPS / (1024 * 1024) to get MBps (MegaBytes per second)
-      setUploadSpeed((data.up_bps || 0) / (1024 * 1024)); 
-      setDownloadSpeed((data.down_bps || 0) / (1024 * 1024));
+      setUploadSpeed((data.up_bps || 0) / 1024); 
+      setDownloadSpeed((data.down_bps || 0) / 1024);
     };
     ws.onerror = (error) => {
       console.error('WebSocket Error:', error);
@@ -124,10 +130,9 @@ const App = () => {
     };
 
     return () => {
-      clearInterval(timer);
       ws.close();
     };
-  }, [bootTime, totalMemory]);
+  }, []);
 
 
 
@@ -305,13 +310,13 @@ const App = () => {
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase">Upload</div>
-                    <div className="text-lg font-bold text-white/60">{uploadSpeed.toFixed(1)} MB/s</div>
+                    <div className="text-lg font-bold text-white/60">{uploadSpeed.toFixed(1)} KB/s</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase">Download</div>
-                    <div className="text-lg font-bold text-white/60">{downloadSpeed.toFixed(1)} MB/s</div>
+                    <div className="text-lg font-bold text-white/60">{downloadSpeed.toFixed(1)} KB/s</div>
                   </div>
                 </div>
               </div>
