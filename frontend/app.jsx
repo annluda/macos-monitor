@@ -38,6 +38,24 @@ const App = () => {
         setUptime(formatUptime(data.uptime_seconds));
       })
       .catch(error => console.error('Error fetching static data:', error));
+
+    // Daily network traffic
+    fetch('http://localhost:8000/api/network/daily')
+      .then(response => response.json())
+      .then(data => {
+        // Map daily_7d to weekData
+        const newWeekData = data.daily_7d.map(daily => ({
+          day: new Date(daily.date).toLocaleDateString('en-US', { weekday: 'short' }), // e.g., "Mon"
+          upload: Math.round(daily.up_bytes / (1024 * 1024 * 1024)), // Convert to GB
+          download: Math.round(daily.down_bytes / (1024 * 1024* 1024)) // Convert to GB
+        })).reverse(); // Reverse to have Mon as first and Sun as last if needed, or based on API order.
+        // The API returns most recent first, so reverse to have oldest first for chart.
+        setWeekData(newWeekData);
+        if (data.since_boot) {
+          setSinceBootStats(data.since_boot);
+        }
+      })
+      .catch(error => console.error('Error fetching daily network data:', error));
   }, []); // Empty dependency array means this runs once on mount
 
   useEffect(() => {
@@ -61,24 +79,6 @@ const App = () => {
           setTopProcesses(mappedProcesses);
         })
         .catch(error => console.error('Error fetching dynamic data:', error));
-
-      // Daily network traffic
-      fetch('http://localhost:8000/api/network/daily')
-        .then(response => response.json())
-        .then(data => {
-          // Map daily_7d to weekData
-          const newWeekData = data.daily_7d.map(daily => ({
-            day: new Date(daily.date).toLocaleDateString('en-US', { weekday: 'short' }), // e.g., "Mon"
-            upload: Math.round(daily.up_bytes / (1024 * 1024 * 1024)), // Convert to GB
-            download: Math.round(daily.down_bytes / (1024 * 1024* 1024)) // Convert to GB
-          })).reverse(); // Reverse to have Mon as first and Sun as last if needed, or based on API order.
-          // The API returns most recent first, so reverse to have oldest first for chart.
-          setWeekData(newWeekData);
-          if (data.since_boot) {
-            setSinceBootStats(data.since_boot);
-          }
-        })
-        .catch(error => console.error('Error fetching daily network data:', error));
 
       // Hourly network rate
       fetch('http://localhost:8000/api/network/hourly')
