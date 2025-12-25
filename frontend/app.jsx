@@ -489,13 +489,13 @@ const App = () => {
                             </g>
                         </svg>
                         <text x="100%" y="5%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.3)" font-size="8">
-                          1h max
+                         —— 1h max ——
                         </text>
                         <text x="100%" y="15%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.25)" font-size="8">
-                          {formatBytes(maxUpload / 8)}/s ↑
+                          {formatBytes(maxUpload)}/s ↑
                         </text>
                         <text x="100%" y="25%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.2)" font-size="8">
-                          {formatBytes(maxDownload / 8)}/s ↓
+                          {formatBytes(maxDownload)}/s ↓
                         </text>
                       </>
                     );
