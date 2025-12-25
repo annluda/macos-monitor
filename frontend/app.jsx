@@ -1,4 +1,118 @@
-import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useEffect, useState, useMemo } from 'react';
+
+const Counter = ({ value, size }) => {
+  return (
+    <motion.span
+      key={value}
+      initial={{ y: 10, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: -10, opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`${size} font-mono font-bold text-white/80`}
+    >
+      {value}
+    </motion.span>
+  );
+};
+
+const CircularMeter = ({ value, label, size = 'small' }) => {
+  const radius = size === 'large' ? 55 : 40;
+  const circumference = 2 * Math.PI * radius;
+  const centerSize = size === 'large' ? 140 : 100;
+
+  // 1. 核心改进：使用确定的平滑曲线，时长设为 0.8s
+  const transition = {
+    duration: 0.8,
+    ease: [0.4, 0, 0.2, 1], // 标准的 FastOutSlowIn 曲线，极其丝滑
+  };
+
+  // 2. 缓存静态背景，避免每秒重绘，减少性能开销
+  const BackgroundCircles = useMemo(() => (
+    <>
+      <circle cx={centerSize/2} cy={centerSize/2} r={radius + 15} stroke="white" strokeOpacity="0.05" strokeWidth="1" fill="none" />
+      <circle cx={centerSize/2} cy={centerSize/2} r={radius} stroke="white" strokeOpacity="0.1" strokeWidth="8" fill="none" />
+      {/* 刻度 */}
+      {[...Array(size === 'large' ? 12 : 8)].map((_, i) => {
+        const angle = (i / (size === 'large' ? 12 : 8)) * 360;
+        const rad = (angle * Math.PI) / 180;
+        const x1 = centerSize/2 + (radius + 8) * Math.cos(rad);
+        const y1 = centerSize/2 + (radius + 8) * Math.sin(rad);
+        const x2 = centerSize/2 + (radius + 12) * Math.cos(rad);
+        const y2 = centerSize/2 + (radius + 12) * Math.sin(rad);
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="white" strokeOpacity="0.15" strokeWidth="1.5" />;
+      })}
+    </>
+  ), [radius, centerSize, size]);
+
+  return (
+    <div className={`relative flex items-center justify-center ${size === 'large' ? 'w-[140px] h-[140px]' : 'w-[100px] h-[100px]'}`}>
+      <svg className="transform -rotate-90 overflow-visible" width={centerSize} height={centerSize}>
+        {BackgroundCircles}
+
+        {/* 3. 进度条优化：强制开启硬件加速，使用特定的 ease 曲线 */}
+        <motion.circle
+          cx={centerSize/2} cy={centerSize/2} r={radius}
+          stroke="white"
+          strokeOpacity="0.7"
+          strokeWidth="8"
+          fill="none"
+          strokeDasharray={circumference}
+          strokeLinecap="round"
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ 
+            strokeDashoffset: circumference - (value / 100) * circumference 
+          }}
+          transition={transition}
+          style={{ willChange: 'stroke-dashoffset' }}
+        />
+      </svg>
+      
+      {/* 4. 数字滚动：不仅是环在动，数字也要平滑过渡 */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <div className="overflow-hidden h-9 flex items-center">
+            <Counter value={Math.round(value)} size={size === 'large' ? 'text-3xl' : 'text-xl'} />
+            <span className="text-white/40 text-xs ml-0.5">%</span>
+        </div>
+        <div className={`absolute ${size === 'large' ? 'bottom-6' : 'bottom-4'} text-center`}>
+            <span className="text-[10px] text-white/20 uppercase tracking-[0.2em] font-medium">{label}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GlassPanel = ({ children, className = '' }) => (
+<div className={`relative rounded-lg overflow-hidden ${className}`}>
+  <div 
+    className="absolute inset-0 pointer-events-none"
+    style={{
+      // 这个 mask 决定了背景、网格和光束在垂直方向上的可见度（上下渐隐）
+      WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 30%, black 70%, transparent)',
+      maskImage: 'linear-gradient(to bottom, transparent, black 30%, black 70%, transparent)'
+    }}
+  >
+    {/* 磨砂玻璃背景 */}
+    <div className="absolute inset-0 backdrop-blur-md bg-white/5" />
+    {/* 网格线 */}
+    <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:3px_3px]" />
+    {/* 左侧光束 */}
+    <div className="absolute left-0 inset-y-0 w-[2px] bg-gradient-to-r from-white/20 to-transparent shadow-[0_0_15px_rgba(255,255,255,0.2)]"></div>
+    {/* 右侧光束 */}
+    <div className="absolute right-0 inset-y-0 w-[2px] bg-gradient-to-l from-white/20 to-transparent shadow-[0_0_15px_rgba(255,255,255,0.2)]"></div>
+  </div>
+
+  <div className="relative z-10 p-4 h-full flex flex-col">
+    {children}
+  </div>
+</div>
+);
+
+const GlassPanelNoBG = ({ children, className = '' }) => (
+  <div className={`relative bg-white/0 ${className}`}>
+    {children}
+  </div>
+);
 
 const App = () => {
   const [time, setTime] = useState(new Date());
@@ -23,6 +137,29 @@ const App = () => {
   const [topProcesses, setTopProcesses] = useState([]);
   const [hourlyData, setHourlyData] = useState([]);
   const [sinceBootStats, setSinceBootStats] = useState({ up_bytes: 0, down_bytes: 0 });
+
+  const formatUptime = (seconds) => {
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor((seconds % (3600 * 24)) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+
+    let uptimeString = '';
+    if (d > 0) uptimeString += `${d}d `;
+    if (h > 0 || d > 0) uptimeString += `${h}h `; // Show hours if days exist or hours > 0
+    if (m > 0 || h > 0 || d > 0) uptimeString += `${m}m `; // Show minutes if hours exist or minutes > 0
+    return uptimeString.trim();
+  };
+
+  const formatBytes = (bytes, decimals = 1) => {
+    if (bytes === 0) return '0 B'; // Handle 0 bytes case
+    if (bytes < 1024 * 1024) { // Less than 1 MB
+      return (bytes / 1024).toFixed(decimals) + ' KB';
+    } else if (bytes < 1024 * 1024 * 1024) { // Less than 1 GB
+      return (bytes / (1024 * 1024)).toFixed(decimals) + ' MB';
+    } else {
+      return (bytes / (1024 * 1024 * 1024)).toFixed(decimals) + ' GB';
+    }
+  };
 
   useEffect(() => {
     // Fetch static data once
@@ -134,119 +271,6 @@ const App = () => {
       ws.close();
     };
   }, []);
-
-
-
-  const formatUptime = (seconds) => {
-    const d = Math.floor(seconds / (3600 * 24));
-    const h = Math.floor((seconds % (3600 * 24)) / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-
-    let uptimeString = '';
-    if (d > 0) uptimeString += `${d}d `;
-    if (h > 0 || d > 0) uptimeString += `${h}h `; // Show hours if days exist or hours > 0
-    if (m > 0 || h > 0 || d > 0) uptimeString += `${m}m `; // Show minutes if hours exist or minutes > 0
-    return uptimeString.trim();
-  };
-
-  const formatBytes = (bytes, decimals = 1) => {
-    if (bytes === 0) return '0 B'; // Handle 0 bytes case
-    if (bytes < 1024 * 1024) { // Less than 1 MB
-      return (bytes / 1024).toFixed(decimals) + ' KB';
-    } else if (bytes < 1024 * 1024 * 1024) { // Less than 1 GB
-      return (bytes / (1024 * 1024)).toFixed(decimals) + ' MB';
-    } else {
-      return (bytes / (1024 * 1024 * 1024)).toFixed(decimals) + ' GB';
-    }
-  };
-
-  const CircularMeter = ({ value, label, size = 'small' }) => {
-
-    const radius = size === 'large' ? 55 : 40;
-    const circumference = 2 * Math.PI * radius;
-    const offset = circumference - (value / 100) * circumference;
-    const centerSize = size === 'large' ? 140 : 100;
-
-    return (
-      <div className={`relative ${size === 'large' ? 'w-[140px] h-[140px]' : 'w-[100px] h-[100px]'}`}>
-        <svg className="transform -rotate-90" width={centerSize} height={centerSize}>
-          {/* 多层装饰圆环 */}
-          <circle cx={centerSize/2} cy={centerSize/2} r={radius + 17} stroke="rgba(255,255,255,0.1)" strokeWidth="1" fill="none" />
-          <circle cx={centerSize/2} cy={centerSize/2} r={radius + 15} stroke="rgba(255,255,255,0.15)" strokeWidth="2" fill="none" />
-          <circle cx={centerSize/2} cy={centerSize/2} r={radius + 10} stroke="rgba(255,255,255,0.08)" strokeWidth="1" fill="none" strokeDasharray="8 8" />
-          
-          {/* 背景圆环 */}
-          <circle cx={centerSize/2} cy={centerSize/2} r={radius} stroke="rgba(255,255,255,0.1)" strokeWidth="8" fill="none" />
-          
-          {/* 进度圆环 */}
-          <circle
-            cx={centerSize/2} cy={centerSize/2} r={radius}
-            stroke="rgba(255,255,255,0.6)"
-            strokeWidth="8"
-            fill="none"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-            className="transition-all duration-1000"
-          />
-          
-          {/* 刻度标记 */}
-          {[...Array(size === 'large' ? 12 : 8)].map((_, i) => {
-            const angle = (i / (size === 'large' ? 12 : 8)) * 360;
-            const rad = (angle * Math.PI) / 180;
-            const x1 = centerSize/2 + (radius + 8) * Math.cos(rad);
-            const y1 = centerSize/2 + (radius + 8) * Math.sin(rad);
-            const x2 = centerSize/2 + (radius + 10) * Math.cos(rad);
-            const y2 = centerSize/2 + (radius + 10) * Math.sin(rad);
-            return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.2)" strokeWidth="2" />;
-          })}
-             
-        </svg>
-        
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className={`${size === 'large' ? 'text-4xl' : 'text-2xl'} font-bold text-white/60 tracking-tight`}>
-            {Math.round(value)}%
-          </div>
-        </div>
-        
-        <div className={`absolute ${size === 'large' ? 'bottom-8' : 'bottom-5'} left-0 right-0 text-center`}>
-          <div className="font-bold text-white/30 text-xs uppercase tracking-widest font-semibold">{label}</div>
-        </div>
-      </div>
-    );
-  };
-
-const GlassPanel = ({ children, className = '' }) => (
-  <div className={`relative rounded-lg overflow-hidden ${className}`}>
-    <div 
-      className="absolute inset-0 pointer-events-none"
-      style={{
-        // 这个 mask 决定了背景、网格和光束在垂直方向上的可见度（上下渐隐）
-        WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 30%, black 70%, transparent)',
-        maskImage: 'linear-gradient(to bottom, transparent, black 30%, black 70%, transparent)'
-      }}
-    >
-      {/* 磨砂玻璃背景 */}
-      <div className="absolute inset-0 backdrop-blur-md bg-white/5" />
-      {/* 网格线 */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:3px_3px]" />
-      {/* 左侧光束 */}
-      <div className="absolute left-0 inset-y-0 w-[2px] bg-gradient-to-r from-white/20 to-transparent shadow-[0_0_15px_rgba(255,255,255,0.2)]"></div>
-      {/* 右侧光束 */}
-      <div className="absolute right-0 inset-y-0 w-[2px] bg-gradient-to-l from-white/20 to-transparent shadow-[0_0_15px_rgba(255,255,255,0.2)]"></div>
-    </div>
-
-    <div className="relative z-10 p-4 h-full flex flex-col">
-      {children}
-    </div>
-  </div>
-);
-
-  const GlassPanelNoBG = ({ children, className = '' }) => (
-    <div className={`relative bg-white/0 ${className}`}>
-      {children}
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 font-mono relative overflow-hidden">
