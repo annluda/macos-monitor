@@ -34,7 +34,8 @@ const App = () => {
         setCpuInfo(data.cpu_info);
         setTotalMemory(data.total_memory);
         setTotalDisk(data.total_disk);
-        setBootTime(new Date(data.boot_time)); // Parse boot time
+        setBootTime(new Date(data.boot_time));
+        setUptime(formatUptime(data.uptime_seconds));
       })
       .catch(error => console.error('Error fetching static data:', error));
   }, []); // Empty dependency array means this runs once on mount
