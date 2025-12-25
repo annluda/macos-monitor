@@ -371,7 +371,7 @@ const App = () => {
                   const height = (item.download / maxDownload) * 100;
                   return (
                     <div key={idx} className="flex flex-col items-center w-6 text-center">
-                      {item.upload !== 0 && (
+                      {item.download !== 0 && (
                         <div className="text-white/60 text-[10px]">{item.download}</div>
                       )}
                       <div className="w-2 h-20 rounded-full flex items-end mt-1">
