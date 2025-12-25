@@ -41,7 +41,7 @@ const ProcessItem = ({ proc }) => {
         </div>
         <div className="h-0.5 bg-white/10 rounded-full overflow-hidden mt-2">
           <motion.div
-            className="h-full bg-gradient-to-r from-white/20 to-white/50 rounded-full"
+            className={`h-full rounded-full ${proc.cpu > 50 ? 'bg-gradient-to-r from-amber-900 to-amber-600' : 'bg-gradient-to-r from-white/20 to-white/50'}`}
             animate={{ width: `${proc.cpu}%` }}
             transition={{ duration: 0.7, ease: "easeOut" }} // spec: 600-800ms
           />
