@@ -422,11 +422,14 @@ const GlassPanel = ({ children, className = '' }) => (
                               />
                             </g>
                         </svg>
-                        <text x="100%" y="25%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.2)" font-size="8">
-                          Max Up: {formatBytes(maxUpload / 8)}/s
+                        <text x="100%" y="5%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.3)" font-size="8">
+                          1h max
                         </text>
-                        <text x="100%" y="15%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.3)" font-size="8">
-                          Max Down: {formatBytes(maxDownload / 8)}/s
+                        <text x="100%" y="15%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.25)" font-size="8">
+                          {formatBytes(maxUpload / 8)}/s ↑
+                        </text>
+                        <text x="100%" y="25%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.2)" font-size="8">
+                          {formatBytes(maxDownload / 8)}/s ↓
                         </text>
                       </>
                     );
@@ -434,24 +437,6 @@ const GlassPanel = ({ children, className = '' }) => (
                 </svg>
               </div>
             </GlassPanelNoBG>
-
-            {/* System Status */}
-            <div>
-              <div className="grid grid-cols-3 gap-1 text-center">
-                <div className="p-1 rounded">
-                  <div className="text-xs font-bold text-white/10 uppercase">OS Version</div>
-                  <div className="text-xs text-white/20">{osVersion}</div>
-                </div>
-                <div className="p-1 bg-white/0 rounded">
-                  <div className="text-xs font-bold text-white/10 uppercase">uptime</div>
-                  <div className="text-xs text-white/20">{uptime}</div>
-                </div>
-                <div className="p-1 rounded">
-                  <div className="text-xs font-bold text-white/10 uppercase">local Ip</div>
-                  <div className="text-xs text-white/20">{localIp}</div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Right Panel - Top Processes */}
@@ -476,6 +461,21 @@ const GlassPanel = ({ children, className = '' }) => (
                   </div>
                 </div>
               ))}
+            </div>
+            {/* System Status */}
+            <div className="grid grid-cols-3 text-center">
+              <div className="p-1 rounded">
+                <div className="text-xs font-bold text-white/10 uppercase">OS Version</div>
+                <div className="text-xs text-white/20">{osVersion}</div>
+              </div>
+              <div className="p-1 bg-white/0 rounded">
+                <div className="text-xs font-bold text-white/10 uppercase">uptime</div>
+                <div className="text-xs text-white/20">{uptime}</div>
+              </div>
+              <div className="p-1 rounded">
+                <div className="text-xs font-bold text-white/10 uppercase">local Ip</div>
+                <div className="text-xs text-white/20">{localIp}</div>
+              </div>
             </div>
           </GlassPanel>
         </div>
