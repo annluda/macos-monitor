@@ -51,7 +51,7 @@ const App = () => {
 
           // Update top processes
           const mappedProcesses = data.processes.map(proc => ({
-            name: proc.name,
+            name: proc.name.replace(/\s*\(.*\)/g, ''),
             cpu: proc.cpu_percent,
             // Convert memory_rss (bytes) to percentage of total memory
             // Ensure totalMemory is available, otherwise default to 0
