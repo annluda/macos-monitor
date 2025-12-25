@@ -1,26 +1,53 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import { useEffect, useState, useMemo } from 'react';
 
-const Counter = ({ value, size }) => {
+
+// AnimatedNumber smoothly tweens a numeric value, adhering to the spec.
+const AnimatedNumber = ({ value }) => {
+  const motionValue = useMotionValue(value);
+  const transform = useTransform(motionValue, (latest) => latest.toFixed(0));
+
+  useEffect(() => {
+    // Animate the motion value to the new target value
+    const controls = animate(motionValue, value, {
+      duration: 0.4, // spec: 300-500ms
+      ease: "easeOut",
+    });
+    // Stop the animation when the component unmounts or value changes
+    return controls.stop;
+  }, [value]);
+
+  return <motion.span>{transform}</motion.span>;
+};
+
+
+// ProcessItem represents a single row in the top processes list, with all animations included.
+const ProcessItem = ({ proc }) => {
   return (
-    <div className="flex items-center overflow-hidden"> 
-      <AnimatePresence mode="popLayout">
-        <motion.span
-          key={value}
-          initial={{opacity: 0 }}
-          animate={{opacity: 1 }}
-          exit={{opacity: 0 }}
-          transition={{
-            type: "spring",
-            stiffness: 300,
-            damping: 30,
-          }}
-          className={`${size} font-mono font-bold text-white/60 inline-block`}
-        >
-          {value}
-        </motion.span>
-      </AnimatePresence>
-    </div>
+    <motion.div
+      layout // Handles reordering animation
+      // Enter/exit animations
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, height: 0, transition: { duration: 0.2 } }}
+      transition={{ duration: 0.25, ease: 'easeOut' }} // For layout and initial animation
+    >
+      <div className="space-y-4">
+        <div className="flex justify-between text-xs">
+          <span className="text-sm text-white/40 truncate">{proc.name}</span>
+          <span className="text-sm font-medium text-white/20 tabular-nums">
+            <AnimatedNumber value={proc.cpu} />%
+          </span>
+        </div>
+        <div className="h-0.5 bg-white/10 rounded-full overflow-hidden mt-2">
+          <motion.div
+            className="h-full bg-gradient-to-r from-white/20 to-white/50 rounded-full"
+            animate={{ width: `${proc.cpu}%` }}
+            transition={{ duration: 0.7, ease: "easeOut" }} // spec: 600-800ms
+          />
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
@@ -85,7 +112,9 @@ const CircularMeter = ({ value, label, size = 'small' }) => {
       {/* 4. 数字滚动：不仅是环在动，数字也要平滑过渡 */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <div className="overflow-hidden h-9 flex items-center">
-            <Counter value={Math.round(value)} size={size === 'large' ? 'text-3xl' : 'text-xl'} />
+            <span className={`${size === 'large' ? 'text-3xl' : 'text-xl'} font-bold text-white/60 inline-block`}>
+              <AnimatedNumber value={Math.round(value)} />
+            </span>
             <span className="text-white/40 text-xs ml-0.5">%</span>
         </div>
         <div className={`absolute ${size === 'large' ? 'bottom-6' : 'bottom-4'} text-center`}>
@@ -482,22 +511,11 @@ const App = () => {
               Top Processes
             </div>
             <div className="space-y-2">
-              {topProcesses.map((proc, _) => (
-                <div key={proc.pid} className="py-2">
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-sm text-white/40 truncate">{proc.name}</span>
-                      <span className="text-sm font-medium text-white/20 tabular-nums">{proc.cpu.toFixed(0)}%</span>
-                    </div>
-                    <div className="h-0.5 bg-white/10 rounded-full overflow-hidden mt-2">
-                      <div 
-                        className="h-full bg-gradient-to-r from-white/20 to-white/50 rounded-full"
-                        style={{ width: `${proc.cpu}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <AnimatePresence>
+                {topProcesses.map((proc) => (
+                  <ProcessItem key={proc.pid} proc={proc} />
+                ))}
+              </AnimatePresence>
             </div>
             {/* System Status */}
             <div className="grid grid-cols-3 text-center mt-auto">
