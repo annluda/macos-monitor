@@ -321,13 +321,14 @@ const App = () => {
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-50" />
       
       <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 hidden lg:block">
           <h1 className="text-5xl font-bold text-white/30 tracking-widest mb-2" >
             MAC MINI M2
           </h1>
         </div>
 
-        <div className="grid grid-cols-12 gap-4">
+        {/* Desktop Layout */}
+        <div className="hidden lg:grid grid-cols-12 gap-4">
           {/* Left Panel - 7 Day Traffic */}
           <GlassPanel className="col-span-3 p-4">
             <div className="pt-10">
@@ -389,7 +390,8 @@ const App = () => {
             <div className="mt-auto">
               <div className="grid grid-cols-3 gap-1 text-center">
                 <div className="p-1 bg-white/0 rounded">
-                  <div className="text-xs font-bold text-white/10 uppercase">Since boot</div>
+                  <div className="text-xs font-bold text-white/20 uppercase">Since</div>
+                  <div className="text-xs font-bold text-white/10 uppercase">boot</div>
                 </div>
                 <div className="p-1 bg-white/0 rounded">
                   <div className="text-xs font-bold text-white/10 uppercase">Upload</div>
@@ -488,13 +490,13 @@ const App = () => {
                               />
                             </g>
                         </svg>
-                        <text x="100%" y="5%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.3)" font-size="8">
+                        <text x="100%" y="5%" dominantBaseline="middle" textAnchor="end" fill="rgba(255,255,255,0.3)" fontSize="8">
                          —— 1h max ——
                         </text>
-                        <text x="100%" y="15%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.25)" font-size="8">
+                        <text x="100%" y="15%" dominantBaseline="middle" textAnchor="end" fill="rgba(255,255,255,0.25)" fontSize="8">
                           {formatBytes(maxUpload)}/s ↑
                         </text>
-                        <text x="100%" y="25%" dominant-baseline="middle" text-anchor="end" fill="rgba(255,255,255,0.2)" font-size="8">
+                        <text x="100%" y="25%" dominantBaseline="middle" textAnchor="end" fill="rgba(255,255,255,0.2)" fontSize="8">
                           {formatBytes(maxDownload)}/s ↓
                         </text>
                       </>
@@ -519,6 +521,171 @@ const App = () => {
             </div>
             {/* System Status */}
             <div className="grid grid-cols-3 text-center mt-auto">
+              <div className="p-1 rounded">
+                <div className="text-xs font-bold text-white/10 uppercase">OS Version</div>
+                <div className="text-xs text-white/20">{osVersion}</div>
+              </div>
+              <div className="p-1 bg-white/0 rounded">
+                <div className="text-xs font-bold text-white/10 uppercase">uptime</div>
+                <div className="text-xs text-white/20">{uptime}</div>
+              </div>
+              <div className="p-1 rounded">
+                <div className="text-xs font-bold text-white/10 uppercase">local Ip</div>
+                <div className="text-xs text-white/20">{localIp}</div>
+              </div>
+            </div>
+          </GlassPanel>
+        </div>
+
+        {/* Mobile Layout */}
+        <div className="lg:hidden flex flex-col gap-4">
+          {/* Core Meters Row */}
+          <GlassPanel>
+            <div className="grid grid-cols-2">
+              <div className="p-6 flex justify-center items-center">
+                <CircularMeter value={memoryUsage} label="内存"/>
+              </div>
+              <div className="p-6 flex justify-center items-center">
+                <CircularMeter value={cpuUsage} label="CPU"/>
+              </div>
+            </div>
+          </GlassPanel>
+
+          {/* Main Storage */}
+          <GlassPanel className="p-6 flex justify-center items-center">
+            <CircularMeter value={storageUsage} label="硬盘" size='large' />
+          </GlassPanel>
+
+          {/* Network Activity & Wave Scan */}
+          <GlassPanel className="p-4">
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <div className="flex items-center justify-end gap-3">
+                <div className="text-right">
+                  <div className="text-sm font-bold text-white/20 uppercase">Download</div>
+                  <div className="text-xs text-white/40">{formatBytes(downloadSpeed)}/s</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-sm font-bold text-white/20 uppercase">Upload</div>
+                  <div className="text-xs text-white/40">{formatBytes(uploadSpeed)}/s</div>
+                </div>
+              </div>
+            </div>
+            <div className="h-32 relative bg-white/0 rounded overflow-hidden">
+              <svg className="w-full h-full" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="waveGradMobile" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#ffffffff" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#ffffffff" stopOpacity="0.1" />
+                  </linearGradient>
+                </defs>
+                {hourlyData.length > 1 && (() => {
+                  const maxDownload = Math.max(...hourlyData.map(d => d.download), 0.01);
+                  const maxUpload = Math.max(...hourlyData.map(d => d.upload), 0.01);
+                  const len = hourlyData.length - 1;
+                  const uploadPoints = hourlyData.map((d, i) => `${(i / len) * 100},${100 - (d.upload / maxUpload) * 60}`).join(' ');
+                  const downloadPoints = hourlyData.map((d, i) => `${(i / len) * 100},${100 - (d.download / maxDownload) * 80}`).join(' ');
+                  return (
+                    <>
+                      <svg x="51%" y="0" width="40%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <polyline points={uploadPoints} fill="none" stroke="url(#waveGradMobile)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                      </svg>
+                      <svg x="9%" y="0" width="40%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <g transform="scale(-1, 1) translate(-100, 0)">
+                          <polyline points={downloadPoints} fill="none" stroke="url(#waveGradMobile)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                        </g>
+                      </svg>
+                      <text x="100%" y="5%" dominantBaseline="middle" textAnchor="end" fill="rgba(255,255,255,0.3)" fontSize="8">—— 1h max ——</text>
+                      <text x="100%" y="15%" dominantBaseline="middle" textAnchor="end" fill="rgba(255,255,255,0.25)" fontSize="8">{formatBytes(maxUpload)}/s ↑</text>
+                      <text x="100%" y="25%" dominantBaseline="middle" textAnchor="end" fill="rgba(255,255,255,0.2)" fontSize="8">{formatBytes(maxDownload)}/s ↓</text>
+                    </>
+                  );
+                })()}
+              </svg>
+            </div>
+          </GlassPanel>
+
+          {/* Top Processes */}
+          <GlassPanel className="p-4">
+            <div className="pt-10 text text-white/15 uppercase tracking-wider mb-8 flex items-center gap-2">
+              Top Processes
+            </div>
+            <div className="space-y-2">
+              <AnimatePresence>
+                {topProcesses.map((proc) => (
+                  <ProcessItem key={proc.pid} proc={proc} />
+                ))}
+              </AnimatePresence>
+            </div>
+          </GlassPanel>
+
+          {/* 7 Day Traffic */}
+          <GlassPanel className="p-4">
+            <div className="pt-10">
+              <div className="text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
+                Daily Traffic
+              </div>
+              <div className="text-xs text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
+                Upload(GB)
+              </div>
+              <div className="flex justify-between items-end h-28 px-1">
+                {weekData.map((item, idx) => {
+                  const maxUpload = Math.max(...weekData.map(d => d.upload));
+                  const height = (item.upload / maxUpload) * 100;
+                  return (
+                    <div key={idx} className="flex flex-col items-center w-6 text-center">
+                      {item.upload !== 0 && <div className="text-white/60 text-[10px]">{item.upload}</div>}
+                      <div className="w-2 h-20 rounded-full flex items-end mt-1">
+                        <div className="w-full bg-gradient-to-b from-sky-800 to-sky-950 rounded-full transition-all duration-500" style={{ height: `${height}%` }} />
+                      </div>
+                      <div className="text-white/50 text-xs mt-1">{item.day}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="mt-8">
+              <div className="text-xs text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
+                Download(GB)
+              </div>
+              <div className="flex justify-between items-end h-28 px-1">
+                {weekData.map((item, idx) => {
+                  const maxDownload = Math.max(...weekData.map(d => d.download));
+                  const height = (item.download / maxDownload) * 100;
+                  return (
+                    <div key={idx} className="flex flex-col items-center w-6 text-center">
+                      {item.download !== 0 && <div className="text-white/60 text-[10px]">{item.download}</div>}
+                      <div className="w-2 h-20 rounded-full flex items-end mt-1">
+                        <div className="w-full bg-gradient-to-b from-emerald-800 to-emerald-950 rounded-full transition-all duration-500" style={{ height: `${height}%` }} />
+                      </div>
+                      <div className="text-white/50 text-xs mt-1">{item.day}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="mt-auto pt-4">
+              <div className="grid grid-cols-3 gap-1 text-center">
+                <div className="p-1 bg-white/0 rounded">
+                  <div className="text-xs font-bold text-white/20 uppercase">Since</div>
+                  <div className="text-xs font-bold text-white/10 uppercase">boot</div>
+                </div>
+                <div className="p-1 bg-white/0 rounded">
+                  <div className="text-xs font-bold text-white/10 uppercase">Upload</div>
+                  <div className="text-xs text-white/20"> {formatBytes(sinceBootStats.up_bytes, 0)} </div>
+                </div>
+                <div className="p-1 rounded">
+                  <div className="text-xs font-bold text-white/10 uppercase">Download</div>
+                  <div className="text-xs text-white/20"> {formatBytes(sinceBootStats.down_bytes, 0)} </div>
+                </div>
+              </div>
+            </div>
+          </GlassPanel>
+
+          {/* System Status */}
+          <GlassPanel className="p-4">
+            <div className="grid grid-cols-3 text-center">
               <div className="p-1 rounded">
                 <div className="text-xs font-bold text-white/10 uppercase">OS Version</div>
                 <div className="text-xs text-white/20">{osVersion}</div>
