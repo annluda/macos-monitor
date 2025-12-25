@@ -1,18 +1,26 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useMemo } from 'react';
 
 const Counter = ({ value, size }) => {
   return (
-    <motion.span
-      key={value}
-      initial={{ y: 10, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: -10, opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`${size} font-mono font-bold text-white/80`}
-    >
-      {value}
-    </motion.span>
+    <div className="flex items-center overflow-hidden"> 
+      <AnimatePresence mode="popLayout">
+        <motion.span
+          key={value}
+          initial={{opacity: 0 }}
+          animate={{opacity: 1 }}
+          exit={{opacity: 0 }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+          }}
+          className={`${size} font-mono font-bold text-white/60 inline-block`}
+        >
+          {value}
+        </motion.span>
+      </AnimatePresence>
+    </div>
   );
 };
 
@@ -30,18 +38,24 @@ const CircularMeter = ({ value, label, size = 'small' }) => {
   // 2. 缓存静态背景，避免每秒重绘，减少性能开销
   const BackgroundCircles = useMemo(() => (
     <>
-      <circle cx={centerSize/2} cy={centerSize/2} r={radius + 15} stroke="white" strokeOpacity="0.05" strokeWidth="1" fill="none" />
-      <circle cx={centerSize/2} cy={centerSize/2} r={radius} stroke="white" strokeOpacity="0.1" strokeWidth="8" fill="none" />
+      {/* 多层装饰圆环 */}
+      <circle cx={centerSize/2} cy={centerSize/2} r={radius + 17} stroke="rgba(255,255,255,0.1)" strokeWidth="1" fill="none" />
+      <circle cx={centerSize/2} cy={centerSize/2} r={radius + 15} stroke="rgba(255,255,255,0.15)" strokeWidth="2" fill="none" />
+      <circle cx={centerSize/2} cy={centerSize/2} r={radius + 10} stroke="rgba(255,255,255,0.08)" strokeWidth="1" fill="none" strokeDasharray="8 8" />
+
+      {/* 背景圆环 */}
+      <circle cx={centerSize/2} cy={centerSize/2} r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="8" fill="none" />
+
       {/* 刻度 */}
       {[...Array(size === 'large' ? 12 : 8)].map((_, i) => {
         const angle = (i / (size === 'large' ? 12 : 8)) * 360;
         const rad = (angle * Math.PI) / 180;
         const x1 = centerSize/2 + (radius + 8) * Math.cos(rad);
         const y1 = centerSize/2 + (radius + 8) * Math.sin(rad);
-        const x2 = centerSize/2 + (radius + 12) * Math.cos(rad);
-        const y2 = centerSize/2 + (radius + 12) * Math.sin(rad);
-        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="white" strokeOpacity="0.15" strokeWidth="1.5" />;
-      })}
+        const x2 = centerSize/2 + (radius + 10) * Math.cos(rad);
+        const y2 = centerSize/2 + (radius + 10) * Math.sin(rad);
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.2)" strokeWidth="2" />;
+        })}
     </>
   ), [radius, centerSize, size]);
 
@@ -54,7 +68,7 @@ const CircularMeter = ({ value, label, size = 'small' }) => {
         <motion.circle
           cx={centerSize/2} cy={centerSize/2} r={radius}
           stroke="white"
-          strokeOpacity="0.7"
+          strokeOpacity="0.6"
           strokeWidth="8"
           fill="none"
           strokeDasharray={circumference}
