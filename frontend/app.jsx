@@ -70,6 +70,7 @@ const App = () => {
 
           // Update top processes
           const mappedProcesses = data.processes.map(proc => ({
+            pid: proc.pid,
             name: proc.name.replace(/\s*\(.*\)/g, ''),
             cpu: proc.cpu_percent,
             // Convert memory_rss (bytes) to percentage of total memory
@@ -443,8 +444,8 @@ const GlassPanel = ({ children, className = '' }) => (
               Top Processes
             </div>
             <div className="space-y-2">
-              {topProcesses.map((proc, idx) => (
-                <div key={idx} className="py-2">
+              {topProcesses.map((proc, _) => (
+                <div key={proc.pid} className="py-2">
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-sm text-white/40 truncate">{proc.name}</span>
