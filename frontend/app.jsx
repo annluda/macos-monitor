@@ -118,9 +118,6 @@ const App = () => {
     const ws = new WebSocket('ws://localhost:8000/ws/network/realtime');
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      // Convert BPS to MB/s (Bytes per second to Megabytes per second)
-      // 1 Byte = 8 bits, 1 MB = 1024*1024 Bytes.
-      // So, BPS / (1024 * 1024) to get MBps (MegaBytes per second)
       setUploadSpeed((data.up_bps || 0)); 
       setDownloadSpeed((data.down_bps || 0));
     };
@@ -237,7 +234,7 @@ const GlassPanel = ({ children, className = '' }) => (
       <div className="absolute right-0 inset-y-0 w-[2px] bg-gradient-to-l from-white/20 to-transparent shadow-[0_0_15px_rgba(255,255,255,0.2)]"></div>
     </div>
 
-    <div className="relative z-10 p-4">
+    <div className="relative z-10 p-4 h-full flex flex-col">
       {children}
     </div>
   </div>
@@ -320,11 +317,11 @@ const GlassPanel = ({ children, className = '' }) => (
               </div>
             </div>
 
-            <div className="mt-8">
-              <div className="text-xs text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
-                Since boot
-              </div>
-              <div className="grid grid-cols-2 gap-1 text-center">
+            <div className="mt-auto">
+              <div className="grid grid-cols-3 gap-1 text-center">
+                <div className="p-1 bg-white/0 rounded">
+                  <div className="text-xs font-bold text-white/10 uppercase">Since boot</div>
+                </div>
                 <div className="p-1 bg-white/0 rounded">
                   <div className="text-xs font-bold text-white/10 uppercase">Upload</div>
                   <div className="text-xs text-white/20"> {formatBytes(sinceBootStats.up_bytes, 0)} </div>
@@ -361,13 +358,13 @@ const GlassPanel = ({ children, className = '' }) => (
                 <div className="flex items-center justify-end gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase">Download</div>
-                    <div className="text-lg font-bold text-white/30">{formatBytes(downloadSpeed / 8)}/s</div>
+                    <div className="text-lg font-bold text-white/30">{formatBytes(downloadSpeed)}/s</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div>
                     <div className="text-xs text-white/40 uppercase">Upload</div>
-                    <div className="text-lg font-bold text-white/30">{formatBytes(uploadSpeed / 8)}/s</div>
+                    <div className="text-lg font-bold text-white/30">{formatBytes(uploadSpeed)}/s</div>
                   </div>
                 </div>
               </div>
@@ -449,8 +446,8 @@ const GlassPanel = ({ children, className = '' }) => (
                 <div key={idx} className="py-2">
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
-                      <span className="text-sm text-white/60 truncate">{proc.name}</span>
-                      <span className="text-sm font-medium text-white/30 tabular-nums">{proc.cpu.toFixed(0)}%</span>
+                      <span className="text-sm text-white/40 truncate">{proc.name}</span>
+                      <span className="text-sm font-medium text-white/20 tabular-nums">{proc.cpu.toFixed(0)}%</span>
                     </div>
                     <div className="h-0.5 bg-white/10 rounded-full overflow-hidden mt-2">
                       <div 
@@ -463,7 +460,7 @@ const GlassPanel = ({ children, className = '' }) => (
               ))}
             </div>
             {/* System Status */}
-            <div className="grid grid-cols-3 text-center">
+            <div className="grid grid-cols-3 text-center mt-auto">
               <div className="p-1 rounded">
                 <div className="text-xs font-bold text-white/10 uppercase">OS Version</div>
                 <div className="text-xs text-white/20">{osVersion}</div>
