@@ -261,7 +261,7 @@ const GlassPanel = ({ children, className = '' }) => (
         <div className="grid grid-cols-12 gap-4">
           {/* Left Panel - 7 Day Traffic */}
           <GlassPanel className="col-span-3 p-4">
-            <div className="pt-20">
+            <div className="pt-10">
               <div className="text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
                 Daily Traffic
               </div>
@@ -356,15 +356,15 @@ const GlassPanel = ({ children, className = '' }) => (
             <GlassPanelNoBG className="p-4">
               <div className="grid grid-cols-2 gap-4 mb-3">
                 <div className="flex items-center justify-end gap-3">
-                  <div>
-                    <div className="text-xs text-white/40 uppercase">Download</div>
-                    <div className="text-lg font-bold text-white/30">{formatBytes(downloadSpeed)}/s</div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-white/20 uppercase">Download</div>
+                    <div className="text-xs text-white/40">{formatBytes(downloadSpeed)}/s</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div>
-                    <div className="text-xs text-white/40 uppercase">Upload</div>
-                    <div className="text-lg font-bold text-white/30">{formatBytes(uploadSpeed)}/s</div>
+                    <div className="text-sm font-bold text-white/20 uppercase">Upload</div>
+                    <div className="text-xs text-white/40">{formatBytes(uploadSpeed)}/s</div>
                   </div>
                 </div>
               </div>
@@ -438,7 +438,7 @@ const GlassPanel = ({ children, className = '' }) => (
 
           {/* Right Panel - Top Processes */}
           <GlassPanel className="col-span-3 p-4 ">
-            <div className="pt-20 text text-white/15 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <div className="pt-10 text text-white/15 uppercase tracking-wider mb-8 flex items-center gap-2">
               Top Processes
             </div>
             <div className="space-y-2">
