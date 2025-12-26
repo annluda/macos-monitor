@@ -1,6 +1,7 @@
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
 import { useEffect, useState, useMemo } from 'react';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 // AnimatedNumber smoothly tweens a numeric value, adhering to the spec.
 const AnimatedNumber = ({ value }) => {
@@ -206,7 +207,7 @@ const App = () => {
 
   useEffect(() => {
     // Fetch static data once
-    fetch('http://localhost:8000/api/system/static')
+    fetch(`${API_URL}/api/system/static`)
       .then(response => response.json())
       .then(data => {
         setOsVersion(data.os_version);
@@ -220,7 +221,7 @@ const App = () => {
       .catch(error => console.error('Error fetching static data:', error));
 
     // Daily network traffic
-    fetch('http://localhost:8000/api/network/daily')
+    fetch(`${API_URL}/api/network/daily`)
       .then(response => response.json())
       .then(data => {
         // Map daily_7d to weekData
@@ -241,7 +242,7 @@ const App = () => {
   useEffect(() => {
     const fetchData = () => {
       // Dynamic data
-      fetch('http://localhost:8000/api/system/dynamic')
+      fetch(`${API_URL}/api/system/dynamic`)
         .then(response => response.json())
         .then(data => {
           setCpuUsage(data.cpu_percent);
@@ -262,7 +263,7 @@ const App = () => {
         .catch(error => console.error('Error fetching dynamic data:', error));
 
       // Hourly network rate
-      fetch('http://localhost:8000/api/network/hourly')
+      fetch(`${API_URL}/api/network/hourly`)
         .then(response => response.json())
         .then(data => {
           const newHourlyData = data.points.map(point => ({
@@ -297,7 +298,7 @@ const App = () => {
 
   useEffect(() => {
     // WebSocket for real-time network speed
-    const ws = new WebSocket('ws://localhost:8000/ws/network/realtime');
+    const ws = new WebSocket(`${API_URL.replace('http:', 'ws:')}/ws/network/realtime`);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setUploadSpeed((data.up_bps || 0)); 
