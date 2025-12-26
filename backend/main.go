@@ -131,6 +131,38 @@ func staticSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(info)
 }
 
+// getProcessIdentifier aggregates processes by their parent .app bundle if applicable.
+func getProcessIdentifier(p *process.Process) string {
+	exe, err := p.Exe()
+	if err != nil {
+		// Fallback to name on error
+		name, _ := p.Name()
+		return name
+	}
+
+	// Check if the process is part of a macOS .app bundle
+	idx := strings.Index(exe, ".app/")
+	if idx == -1 {
+		// Not in a bundle, use the process name
+		name, _ := p.Name()
+		return name
+	}
+
+	// Full path to the app bundle, e.g., "/Applications/Google Chrome.app"
+	bundlePath := exe[:idx+4]
+
+	// Get the base name, e.g., "Google Chrome.app"
+	lastSlash := strings.LastIndex(bundlePath, "/")
+	if lastSlash == -1 {
+		// Fallback for unexpected paths
+		return strings.TrimSuffix(bundlePath, ".app")
+	}
+	baseName := bundlePath[lastSlash+1:]
+
+	// Trim the .app suffix to get "Google Chrome"
+	return strings.TrimSuffix(baseName, ".app")
+}
+
 func dynamicSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -144,12 +176,11 @@ func dynamicSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 	diskInfo, _ := disk.Usage("/")
 
 	procs, _ := process.Processes()
-	processes := make([]procInfo, 0)
+
+	// Aggregate processes by app bundle
+	aggregatedProcs := make(map[string]procInfo)
 	for _, p := range procs {
-		name, err := p.Name()
-		if err != nil {
-			continue
-		}
+		// Get CPU and memory info first
 		procCpuPercent, err := p.CPUPercent()
 		if err != nil {
 			continue
@@ -158,12 +189,23 @@ func dynamicSystemInfoHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue
 		}
-		processes = append(processes, procInfo{
-			Pid:        p.Pid,
-			Name:       name,
-			CPUPercent: procCpuPercent,
-			MemoryRss:  procMemInfo.RSS,
-		})
+
+		// Determine the aggregation key (app bundle or process name)
+		key := getProcessIdentifier(p)
+
+		// Aggregate the stats
+		data := aggregatedProcs[key]
+		data.Pid = p.Pid // Use the PID of the most recently seen process in the group
+		data.Name = key
+		data.CPUPercent += procCpuPercent
+		data.MemoryRss += procMemInfo.RSS
+		aggregatedProcs[key] = data
+	}
+
+	// Convert map to slice for sorting
+	processes := make([]procInfo, 0, len(aggregatedProcs))
+	for _, pi := range aggregatedProcs {
+		processes = append(processes, pi)
 	}
 
 	sort.Slice(processes, func(i, j int) bool {
