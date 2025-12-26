@@ -31,11 +31,10 @@ type Monitor struct {
 	db             *DBManager
 	realtimeRate      RealtimeRate
 	hourlyStats       HourlyStats
-	trafficSinceStart SinceBootTraffic
+	trafficSinceBoot SinceBootTraffic
 
 	// Internal state
 	mu                 sync.RWMutex
-	initialSample      IOStats
 	lastSample         IOStats
 	downRateMA         *movingAverage
 	upRateMA           *movingAverage
@@ -71,9 +70,6 @@ func NewMonitor() (*Monitor, error) {
 		// Let it start anyway, the loop will handle recovery
 	}
 	m.lastSample = initialStats
-	m.initialSample = initialStats
-	m.trafficSinceStart.DownBytes = 0
-	m.trafficSinceStart.UpBytes = 0
 
 
 	return m, nil
@@ -119,7 +115,7 @@ func (m *Monitor) GetStats() (Stats, error) {
 
 	return Stats{
 		Daily7d:   daily7d,
-		SinceBoot: m.trafficSinceStart,
+		SinceBoot: m.trafficSinceBoot,
 	}, nil
 }
 
@@ -162,9 +158,9 @@ func (m *Monitor) performSample() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	// Update total since start stats
-	m.trafficSinceStart.UpBytes = currentStats.BytesSent - m.initialSample.BytesSent
-	m.trafficSinceStart.DownBytes = currentStats.BytesRecv - m.initialSample.BytesRecv
+	// Update total since boot stats. These values are cumulative since boot.
+	m.trafficSinceBoot.UpBytes = int64(currentStats.BytesSent)
+	m.trafficSinceBoot.DownBytes = int64(currentStats.BytesRecv)
 	
 	// Check for sleep/wake or initial sample
 	deltaT := currentStats.Time.Sub(m.lastSample.Time).Seconds()

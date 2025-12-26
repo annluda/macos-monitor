@@ -86,15 +86,11 @@ type procInfo struct {
 }
 
 func getMacOSVersion() string {
-	productName, err := exec.Command("sw_vers", "-productName").Output()
-	if err != nil {
-		return "N/A"
-	}
 	productVersion, err := exec.Command("sw_vers", "-productVersion").Output()
 	if err != nil {
 		return "N/A"
 	}
-	return fmt.Sprintf("%s %s", strings.TrimSpace(string(productName)), strings.TrimSpace(string(productVersion)))
+	return strings.TrimSpace(string(productVersion))
 }
 
 func getLocalIP() string {

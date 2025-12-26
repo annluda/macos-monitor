@@ -98,7 +98,7 @@ func (m *DBManager) UpdateSample(stats IOStats) error {
 func (m *DBManager) GetDailyTrafficForLast7Days() ([]DailyTraffic, error) {
 	sevenDaysAgo := time.Now().AddDate(0, 0, -6).Format("2006-01-02")
 	rows, err := m.db.Query(`
-        SELECT date, last_bytes_recv - first_bytes_recv, last_bytes_sent - first_bytes_sent
+        SELECT date, MAX(0, last_bytes_recv - first_bytes_recv), MAX(0, last_bytes_sent - first_bytes_sent)
         FROM daily_traffic
         WHERE date >= ?
     `, sevenDaysAgo)

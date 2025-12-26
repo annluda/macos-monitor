@@ -23,14 +23,14 @@ type HourlyStats struct {
 // DailyTraffic represents the total traffic for a single day.
 type DailyTraffic struct {
 	Date      string `json:"date"`
-	DownBytes uint64 `json:"down_bytes"`
-	UpBytes   uint64 `json:"up_bytes"`
+	DownBytes int64 `json:"down_bytes"`
+	UpBytes   int64 `json:"up_bytes"`
 }
 
 // SinceBootTraffic represents the total traffic since the system booted up.
 type SinceBootTraffic struct {
-	DownBytes uint64 `json:"down_bytes"`
-	UpBytes   uint64 `json:"up_bytes"`
+	DownBytes int64 `json:"down_bytes"`
+	UpBytes   int64 `json:"up_bytes"`
 }
 
 // Stats represents the consolidated traffic statistics.
